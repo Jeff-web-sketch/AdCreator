@@ -1064,6 +1064,8 @@ class RecentTab(QWidget):
         settings = AppSettings()
         for entry in settings.recent_projects:
             path = entry.get("path", "")
+            if not path:
+                continue
             exists = Path(path).exists() and path.endswith('.adcreator')
             
             timestamp = entry.get("timestamp", 0)

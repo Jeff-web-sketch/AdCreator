@@ -3,10 +3,14 @@
 import json
 import re
 import zipfile
+import logging
+import base64
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -201,8 +205,11 @@ class ModProject:
             for mod_file in self.files.values():
                 if mod_file.is_binary:
                     # Assume content is base64 encoded
-                    import base64
-                    content = base64.b64decode(mod_file.content)
+                    try:
+                        content = base64.b64decode(mod_file.content)
+                    except Exception as e:
+                        logger.error(f"Failed to decode base64 content for {mod_file.path}: {e}")
+                        continue
                 else:
                     content = mod_file.content.encode('utf-8')
                 

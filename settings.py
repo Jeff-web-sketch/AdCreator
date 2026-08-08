@@ -103,7 +103,7 @@ class AppSettings:
         recent = self.data.get("recent_projects", [])
         
         # Remove if already exists
-        recent = [r for r in recent if r["path"] != path]
+        recent = [r for r in recent if r.get("path") != path]
         
         # Add new entry at front
         recent.insert(0, {
@@ -120,6 +120,6 @@ class AppSettings:
     def remove_recent(self, path: str):
         """Remove a project from recent list."""
         recent = self.data.get("recent_projects", [])
-        recent = [r for r in recent if r["path"] != path]
+        recent = [r for r in recent if r.get("path") != path]
         self.data["recent_projects"] = recent
         self.save()

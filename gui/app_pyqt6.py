@@ -3,8 +3,11 @@
 import sys
 import time
 import shutil
+import logging
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
@@ -1342,7 +1345,8 @@ class ModMakerGUI(QMainWindow):
             else:
                 try:
                     install_dir = path.parent.parent.parent.parent
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"Error navigating path hierarchy: {e}")
                     install_dir = path
                 self.lbl_game_status.setText(f"🎮 0 A.D. loaded: {install_dir.name}")
             
@@ -1664,6 +1668,8 @@ class ModMakerGUI(QMainWindow):
         
         for entry in self.settings.recent_projects:
             path = entry.get("path", "")
+            if not path:
+                continue
             exists = Path(path).is_dir() and (Path(path) / "mod.json").exists()
             
             timestamp = entry.get("timestamp", 0)
@@ -1723,9 +1729,10 @@ class ModMakerGUI(QMainWindow):
         
         if hasattr(self, 'asset_source') and self.asset_source:
             try:
-                self.asset_source.__del__()
-            except:
-                pass
+                if hasattr(self.asset_source, 'close'):
+                    self.asset_source.close()
+            except Exception as e:
+                logger.warning(f"Error closing asset source: {e}")
         
         event.accept()
 
@@ -2072,6 +2079,8 @@ class StartupDialog(QDialog):
             settings = AppSettings()
             for entry in settings.recent_projects:
                 path = entry.get("path", "")
+                if not path:
+                    continue
                 exists = Path(path).is_dir() and (Path(path) / "mod.json").exists()
                 
                 timestamp = entry.get("timestamp", 0)

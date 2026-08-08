@@ -2,10 +2,13 @@
 
 import os
 import sys
+import logging
 import customtkinter as ctk
 from tkinter import messagebox, filedialog
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from constants import STYLE
 from settings import AppSettings
@@ -116,7 +119,8 @@ class ModMakerGUI(AssetBrowserMixin, UnitEditorMixin, NewUnitMixin,
             else:
                 try:
                     install_dir = path.parent.parent.parent.parent
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"Error navigating path hierarchy: {e}")
                     install_dir = path
                 self.lbl_game_status.configure(text=f"🎮 0 A.D. loaded: {install_dir.name}",
                                             text_color="#4ade80")

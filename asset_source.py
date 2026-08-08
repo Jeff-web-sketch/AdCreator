@@ -2,8 +2,11 @@
 
 import os
 import zipfile
+import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Union, Any
+
+logger = logging.getLogger(__name__)
 
 class FakePath:
     """Minimal Path-like object for display purposes with ZIP/folder compatibility."""
@@ -68,8 +71,8 @@ class LocalAssetSource:
         if self.zip_handle:
             try:
                 self.zip_handle.close()
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"Error closing ZIP handle: {e}")
 
     def list_dir(self, rel_path: str = "") -> List[Dict[str, Any]]:
         """List immediate children of a directory."""

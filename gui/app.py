@@ -2,10 +2,13 @@
 
 import os
 import sys
+import logging
 import customtkinter as ctk
 from tkinter import messagebox, filedialog
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from constants import STYLE
 from settings import AppSettings
@@ -528,9 +531,10 @@ class ModMakerGUI(AssetBrowserMixin, UnitEditorMixin, NewUnitMixin,
         # Close any open asset source handles
         if hasattr(self, 'asset_source') and self.asset_source:
             try:
-                self.asset_source.__del__()
-            except:
-                pass
+                if hasattr(self.asset_source, 'close'):
+                    self.asset_source.close()
+            except Exception as e:
+                logger.warning(f"Error closing asset source: {e}")
         
         # Destroy the window
         self.root.destroy()

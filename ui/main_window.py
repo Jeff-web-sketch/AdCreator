@@ -4,8 +4,11 @@ import sys
 import tempfile
 import subprocess
 import platform
+import logging
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QTabWidget, QLabel,
@@ -259,8 +262,11 @@ class MainWindow(QMainWindow):
         
         self.settings.save()
         
-        if self.asset_source and hasattr(self.asset_source, 'close'):
-            self.asset_source.close()
+        if self.asset_source:
+            try:
+                self.asset_source.close()
+            except Exception as e:
+                logger.warning(f"Error closing asset source: {e}")
         
         event.accept()
     
@@ -443,7 +449,13 @@ class MainWindow(QMainWindow):
         
         # Run 0 A.D. with the mod
         try:
-            subprocess.Popen([ad_path, f"--mod={tmp_path}"])
+            # Validate the executable path before launching
+            ad_path_obj = Path(ad_path)
+            if not ad_path_obj.exists():
+                QMessageBox.critical(self, "Error", f"Executable not found: {ad_path}")
+                return
+            
+            subprocess.Popen([str(ad_path_obj), f"--mod={tmp_path}"])
             QMessageBox.information(self, "Success", "0 A.D. launched with your mod!")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to launch 0 A.D.: {e}")

@@ -70,6 +70,8 @@ class RecentProjectsMixin:
         for entry in self.settings.recent_projects:
             # Check if path exists
             path = entry.get("path", "")
+            if not path:
+                continue
             exists = Path(path).is_dir() and (Path(path) / "mod.json").exists()
 
             timestamp = entry.get("timestamp", 0)

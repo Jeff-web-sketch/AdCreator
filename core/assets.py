@@ -1,9 +1,12 @@
 """Asset source management for reading game files."""
 
 import zipfile
+import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,8 +49,8 @@ class FolderAssetSource(AssetSource):
             full_path = self.base_path / path
             if full_path.exists() and full_path.is_file():
                 return full_path.read_text(encoding="utf-8")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error reading text from {path}: {e}")
         return None
     
     def read_binary(self, path: str) -> Optional[bytes]:
@@ -55,8 +58,8 @@ class FolderAssetSource(AssetSource):
             full_path = self.base_path / path
             if full_path.exists() and full_path.is_file():
                 return full_path.read_bytes()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error reading binary from {path}: {e}")
         return None
     
     def list_dir(self, path: str) -> List[AssetEntry]:
@@ -79,8 +82,8 @@ class FolderAssetSource(AssetSource):
                             size=item.stat().st_size,
                             rel_path=rel_path
                         ))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error listing directory {path}: {e}")
         return entries
     
     def list_unit_templates(self) -> List[AssetEntry]:
@@ -96,8 +99,8 @@ class FolderAssetSource(AssetSource):
                         size=xml_file.stat().st_size,
                         rel_path=rel_path
                     ))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error listing unit templates: {e}")
         return entries
 
 
@@ -117,8 +120,8 @@ class ZipAssetSource(AssetSource):
             self._ensure_open()
             if path in self._zip.namelist():
                 return self._zip.read(path).decode('utf-8')
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error reading text from ZIP {path}: {e}")
         return None
     
     def read_binary(self, path: str) -> Optional[bytes]:
@@ -126,8 +129,8 @@ class ZipAssetSource(AssetSource):
             self._ensure_open()
             if path in self._zip.namelist():
                 return self._zip.read(path)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error reading binary from ZIP {path}: {e}")
         return None
     
     def list_dir(self, path: str) -> List[AssetEntry]:
@@ -156,8 +159,8 @@ class ZipAssetSource(AssetSource):
                                 size=info.file_size,
                                 rel_path=name
                             ))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error listing ZIP directory {path}: {e}")
         return entries
     
     def list_unit_templates(self) -> List[AssetEntry]:
@@ -172,8 +175,8 @@ class ZipAssetSource(AssetSource):
                         size=self._zip.getinfo(name).file_size,
                         rel_path=name
                     ))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error listing ZIP unit templates: {e}")
         return entries
     
     def close(self):
