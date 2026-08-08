@@ -23,6 +23,7 @@ from core.mod import ModProject
 from core.settings import AppSettings
 from core.game import GameDataLocator
 from ui.styles import get_dark_theme_palette, get_button_style
+from version import __version__
 from ui.tabs import (
     AssetsTab, UnitsTab, NewUnitTab, SettingsTab,
     OverviewTab, RecentTab, StructureTab, TechsTab, AurasTab, StructuresTab
@@ -51,7 +52,7 @@ class MainWindow(QMainWindow):
         self._auto_load_game_data()
     
     def _setup_window(self):
-        self.setWindowTitle("0 A.D. Mod Maker")
+        self.setWindowTitle(f"0 A.D. Mod Maker v{__version__}")
         w = self.settings.get("window_width", self.DEFAULT_WIDTH)
         h = self.settings.get("window_height", self.DEFAULT_HEIGHT)
         self.resize(w, h)
@@ -70,17 +71,23 @@ class MainWindow(QMainWindow):
         
         new_action = QAction("New Mod...", self)
         new_action.setShortcut("Ctrl+N")
+        new_action.setStatusTip("Create a new mod project")
+        new_action.setToolTip("Create a brand new mod project from scratch")
         new_action.triggered.connect(self.action_new_mod)
         file_menu.addAction(new_action)
         
         open_action = QAction("Open Mod...", self)
         open_action.setShortcut("Ctrl+O")
+        open_action.setStatusTip("Open an existing mod project")
+        open_action.setToolTip("Open an existing .adcreator project file")
         open_action.triggered.connect(self.action_open_mod)
         file_menu.addAction(open_action)
         
         file_menu.addSeparator()
         
         set_folder_action = QAction("Set Game Data Folder...", self)
+        set_folder_action.setStatusTip("Set the 0 A.D. game data location")
+        set_folder_action.setToolTip("Select the folder or ZIP file containing 0 A.D. game data")
         set_folder_action.triggered.connect(self.action_set_game_folder)
         file_menu.addAction(set_folder_action)
         
@@ -88,24 +95,41 @@ class MainWindow(QMainWindow):
         
         build_action = QAction("Build .pyromod", self)
         build_action.setShortcut("Ctrl+B")
+        build_action.setStatusTip("Build the mod as a .pyromod file")
+        build_action.setToolTip("Export your mod as a .pyromod file for distribution")
         build_action.triggered.connect(self.action_build)
         file_menu.addAction(build_action)
         
         run_action = QAction("Run Mod in 0AD", self)
         run_action.setShortcut("Ctrl+R")
+        run_action.setStatusTip("Test your mod in 0 A.D.")
+        run_action.setToolTip("Launch 0 A.D. with your mod loaded for testing")
         run_action.triggered.connect(self.action_run_in_0ad)
         file_menu.addAction(run_action)
         
         file_menu.addSeparator()
         
         exit_action = QAction("Exit", self)
+        exit_action.setShortcut("Ctrl+Q")
+        exit_action.setStatusTip("Exit the application")
+        exit_action.setToolTip("Close the application and save settings")
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
         
         # Help menu
         help_menu = menubar.addMenu("Help")
         
+        shortcuts_action = QAction("Keyboard Shortcuts", self)
+        shortcuts_action.setStatusTip("View keyboard shortcuts")
+        shortcuts_action.setToolTip("View all available keyboard shortcuts")
+        shortcuts_action.triggered.connect(self.action_shortcuts)
+        help_menu.addAction(shortcuts_action)
+        
+        help_menu.addSeparator()
+        
         about_action = QAction("About", self)
+        about_action.setStatusTip("About this application")
+        about_action.setToolTip("View version and credits information")
         about_action.triggered.connect(self.action_about)
         help_menu.addAction(about_action)
     
@@ -114,7 +138,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         
         layout = QVBoxLayout(central_widget)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
         
         # Status bar
         self.status_bar = QStatusBar()
@@ -129,12 +154,14 @@ class MainWindow(QMainWindow):
         
         self.lbl_game_status = QLabel("🔍 Detecting 0 A.D.…")
         self.lbl_game_status.setStyleSheet("color: #c0c0d0; font-size: 12px;")
+        self.lbl_game_status.setToolTip("Shows the status of 0 A.D. game data")
         self.status_bar.addWidget(self.lbl_game_status)
         
         self.status_bar.addPermanentWidget(QLabel(" | "))
         
         self.lbl_mod_status = QLabel("No mod loaded")
         self.lbl_mod_status.setStyleSheet("color: #c0c0d0; font-size: 12px;")
+        self.lbl_mod_status.setToolTip("Shows the currently loaded mod project")
         self.status_bar.addPermanentWidget(self.lbl_mod_status)
         
         # Tab widget
@@ -143,14 +170,19 @@ class MainWindow(QMainWindow):
             QTabWidget::pane {
                 border: 1px solid #6a6a8a;
                 background-color: #2d2d3d;
+                border-radius: 5px;
             }
             QTabBar::tab {
                 background-color: #383848;
                 color: #c0c0d0;
-                padding: 10px 20px;
+                padding: 12px 24px;
                 border: 1px solid #6a6a8a;
                 border-bottom: none;
                 margin-right: 2px;
+                border-top-left-radius: 5px;
+                border-top-right-radius: 5px;
+                font-size: 13px;
+                font-weight: bold;
             }
             QTabBar::tab:selected {
                 background-color: #7b5eff;
@@ -158,8 +190,11 @@ class MainWindow(QMainWindow):
             }
             QTabBar::tab:hover:!selected {
                 background-color: #4d4d5d;
+                color: #ffffff;
             }
         """)
+        self.tab_widget.setMovable(True)
+        self.tab_widget.setDocumentMode(True)
         layout.addWidget(self.tab_widget)
         
         # Create tabs
@@ -461,4 +496,32 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to launch 0 A.D.: {e}")
     
     def action_about(self):
-        QMessageBox.about(self, "About", "0 A.D. Mod Maker\n\nA tool for creating and managing 0 A.D. mods.")
+        about_text = f"""
+        <h2>🎮 0 A.D. Mod Maker</h2>
+        <p><b>Version:</b> {__version__}</p>
+        <p>A modern tool for creating and managing 0 A.D. mods.</p>
+        <p><b>Features:</b></p>
+        <ul>
+            <li>Create and edit mod projects</li>
+            <li>Browse and import game assets</li>
+            <li>Edit unit templates</li>
+            <li>Build .pyromod files for distribution</li>
+            <li>Test mods directly in 0 A.D.</li>
+        </ul>
+        <p><b>Created with:</b> PyQt6, Python</p>
+        """
+        QMessageBox.about(self, "About 0 A.D. Mod Maker", about_text)
+    
+    def action_shortcuts(self):
+        shortcuts_text = """
+        <h2>⌨️ Keyboard Shortcuts</h2>
+        <table border="1" cellpadding="5" cellspacing="0">
+        <tr><td><b>Ctrl+N</b></td><td>New Mod</td></tr>
+        <tr><td><b>Ctrl+O</b></td><td>Open Mod</td></tr>
+        <tr><td><b>Ctrl+B</b></td><td>Build .pyromod</td></tr>
+        <tr><td><b>Ctrl+R</b></td><td>Run Mod in 0 A.D.</td></tr>
+        <tr><td><b>Ctrl+Q</b></td><td>Exit</td></tr>
+        </table>
+        <p><i>More shortcuts may be available in specific tabs and dialogs.</i></p>
+        """
+        QMessageBox.information(self, "Keyboard Shortcuts", shortcuts_text)

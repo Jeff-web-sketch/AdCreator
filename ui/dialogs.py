@@ -6,13 +6,14 @@ from typing import Optional
 
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTreeWidget, QTreeWidgetItem, QLineEdit, QMessageBox
+    QTreeWidget, QTreeWidgetItem, QLineEdit, QMessageBox, QMenu
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 
 from core.settings import AppSettings
 from ui.styles import get_tree_style, get_button_style
+from version import __version__
 
 
 class StartupDialog(QDialog):
@@ -25,7 +26,7 @@ class StartupDialog(QDialog):
         self._load_recent_projects()
     
     def _setup_ui(self):
-        self.setWindowTitle("0 A.D. Mod Maker - Welcome")
+        self.setWindowTitle(f"0 A.D. Mod Maker v{__version__} - Welcome")
         self.setMinimumSize(800, 600)
         
         layout = QVBoxLayout(self)
@@ -66,10 +67,11 @@ class StartupDialog(QDialog):
         self.recent_tree.setSelectionBehavior(QTreeWidget.SelectionBehavior.SelectRows)
         self.recent_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.recent_tree.customContextMenuRequested.connect(self._show_context_menu)
+        self.recent_tree.setToolTip("Right-click for more options")
         layout.addWidget(self.recent_tree)
         
         # Empty state message
-        self.empty_label = QLabel("No recent projects found. Create your first mod to get started!")
+        self.empty_label = QLabel("🚀 No recent projects found.\n\nCreate your first mod to get started!")
         self.empty_label.setStyleSheet("color: #9090a0; font-size: 14px; padding: 20px;")
         self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.empty_label.setVisible(False)
@@ -102,7 +104,17 @@ class StartupDialog(QDialog):
     
     def _load_recent_projects(self):
         settings = AppSettings()
-        for entry in settings.recent_projects:
+        recent_projects = settings.recent_projects
+        
+        if not recent_projects:
+            self.recent_tree.setVisible(False)
+            self.empty_label.setVisible(True)
+            return
+        
+        self.recent_tree.setVisible(True)
+        self.empty_label.setVisible(False)
+        
+        for entry in recent_projects:
             path = entry.get("path", "")
             if not path:
                 continue
@@ -120,6 +132,34 @@ class StartupDialog(QDialog):
             if not exists:
                 item.setForeground(0, QColor("#707080"))
                 item.setForeground(1, QColor("#707080"))
+                item.setForeground(2, QColor("#707080"))
+                item.setText(0, f"❌ {entry.get('label', 'Unknown')} (Not Found)")
+    
+    def _show_context_menu(self, position):
+        """Show context menu for recent projects."""
+        item = self.recent_tree.itemAt(position)
+        if not item:
+            return
+        
+        menu = QMenu(self)
+        
+        open_action = menu.addAction("📂 Open")
+        open_action.triggered.connect(lambda: self._on_recent_double_click(item, 0))
+        
+        path = item.data(0, Qt.ItemDataRole.UserRole)
+        if path and Path(path).exists():
+            menu.addSeparator()
+            remove_action = menu.addAction("🗑️ Remove from Recent")
+            remove_action.triggered.connect(lambda: self._remove_recent(path))
+        
+        menu.exec(self.recent_tree.mapToGlobal(position))
+    
+    def _remove_recent(self, path: str):
+        """Remove a project from recent list."""
+        settings = AppSettings()
+        settings.remove_recent(path)
+        self.recent_tree.clear()
+        self._load_recent_projects()
     
     def _on_recent_double_click(self, item: QTreeWidgetItem, column: int):
         path = item.data(0, Qt.ItemDataRole.UserRole)

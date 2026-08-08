@@ -51,8 +51,10 @@ def get_button_style(accent: bool = False) -> str:
                 color: #ffffff;
                 border: 2px solid #7b5eff;
                 border-radius: 8px;
-                padding: 10px 20px;
+                padding: 12px 24px;
                 font-weight: bold;
+                font-size: 13px;
+                min-width: 120px;
             }
             QPushButton:hover {
                 background-color: #9a7cff;
@@ -60,6 +62,11 @@ def get_button_style(accent: bool = False) -> str:
             }
             QPushButton:pressed {
                 background-color: #6a4ce0;
+            }
+            QPushButton:disabled {
+                background-color: #383848;
+                border-color: #6a6a8a;
+                color: #707080;
             }
         """
     else:
@@ -69,8 +76,10 @@ def get_button_style(accent: bool = False) -> str:
                 color: #ffffff;
                 border: 2px solid #6a6a8a;
                 border-radius: 8px;
-                padding: 8px 16px;
+                padding: 10px 20px;
                 font-weight: bold;
+                font-size: 13px;
+                min-width: 100px;
             }
             QPushButton:hover {
                 background-color: #5a5a7a;
@@ -78,6 +87,11 @@ def get_button_style(accent: bool = False) -> str:
             }
             QPushButton:pressed {
                 background-color: #7b5eff;
+            }
+            QPushButton:disabled {
+                background-color: #383848;
+                border-color: #6a6a8a;
+                color: #707080;
             }
         """
 
@@ -107,17 +121,30 @@ def get_tree_style() -> str:
             background-color: #1a1a2a;
             color: #ffffff;
             border: 2px solid #6a6a8a;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        QTreeWidget::item {
+            padding: 8px;
+            border-bottom: 1px solid #2a2a3a;
         }
         QTreeWidget::item:selected {
             background-color: #7b5eff;
             color: #ffffff;
+            border-radius: 4px;
+        }
+        QTreeWidget::item:hover {
+            background-color: #2a2a3a;
         }
         QTreeWidget::header {
             background-color: #383848;
             color: #ffffff;
             border-bottom: 2px solid #6a6a8a;
-            padding: 5px;
+            padding: 8px;
             font-weight: bold;
+            font-size: 13px;
+        }
+        QTreeWidget::branch {
+            background-color: #1a1a2a;
         }
     """
