@@ -119,24 +119,45 @@ class LocalAssetSource:
                 remainder = name[len(search_prefix):]
                 if not remainder:
                     continue
-                first_component = remainder.split("/")[0] + "/"
-                full_rel = search_prefix.rstrip("/") + "/" + remainder.split("/")[0]
+                # Get the first component (immediate child)
+                parts = remainder.split("/")
+                first_component = parts[0]
+                full_rel = search_prefix + first_component
             else:
-                # Root level
-                first_component = name.split("/")[0] + "/"
-                full_rel = first_component.rstrip("/")
+                # Root level - get first component
+                parts = name.split("/")
+                first_component = parts[0]
+                full_rel = first_component
 
+            # Determine if this is a directory or file
+            # A directory in ZIP either ends with "/" or has more path components
+            is_dir = name.endswith("/") or len(parts) > 1
+            
             if first_component not in results:
-                is_dir = name.endswith("/")
+                # For directories, we need to find a file that directly represents this directory
+                # to get accurate size info, otherwise use 0
+                size = 0
+                if not is_dir:
+                    try:
+                        size = self.zip_handle.getinfo(name).file_size
+                    except KeyError:
+                        pass
+                
                 results[first_component] = {
-                    "name": first_component.rstrip("/"),
+                    "name": first_component,
                     "rel_path": full_rel,
                     "type": "dir" if is_dir else "file",
-                    "size": self.zip_handle.getinfo(name).compress_size if not is_dir else 0,
+                    "size": size,
                     "full_path": None,
                 }
 
-        return list(results.values())
+        # Convert to list and sort: directories first, then files, alphabetically
+        sorted_results = sorted(
+            results.values(),
+            key=lambda x: (x["type"] != "dir", x["name"].lower())
+        )
+        
+        return sorted_results
 
     def read_text(self, rel_path: str) -> Optional[str]:
         if self.is_zip:

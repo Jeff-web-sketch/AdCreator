@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Improved UI/UX with enhanced startup dialog, better tooltips, keyboard shortcuts dialog, and modern styling
+- Complete GUI redesign with sidebar navigation, modern dark theme, improved layout, enhanced user experience, and professional styling
 
 ## [1.1.0] - 2026-08-08
 

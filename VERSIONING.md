@@ -4,7 +4,7 @@ This document explains how to use the versioning system for AdCreator.
 
 ## Files
 
-- **VERSION** - Contains the current version number (e.g., "1.1.0")
+- **VERSION_HISTORY.md** - Contains complete version history with all changes
 - **CHANGELOG.md** - Human-readable changelog following Keep a Changelog format
 - **version.py** - Python module for programmatic version access
 - **update_version.py** - Utility script to update versions
@@ -33,14 +33,14 @@ python update_version.py major "Changed project file format"
 
 This will:
 1. Automatically bump the version number
-2. Update the VERSION file
+2. Add a new version entry to VERSION_HISTORY.md with date and description
 3. Add an entry to the [Unreleased] section in CHANGELOG.md
 
 ## Manual Version Updates
 
 If you prefer to update manually:
 
-1. Update the version in the VERSION file
+1. Add a new version entry to VERSION_HISTORY.md with date and changes
 2. Add a new section to CHANGELOG.md under [Unreleased]
 3. When releasing, move [Unreleased] entries to a new version section with the date
 

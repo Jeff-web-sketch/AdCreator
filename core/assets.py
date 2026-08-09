@@ -67,7 +67,7 @@ class FolderAssetSource(AssetSource):
         try:
             full_path = self.base_path / path
             if full_path.exists() and full_path.is_dir():
-                for item in full_path.iterdir():
+                for item in sorted(full_path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
                     rel_path = str(item.relative_to(self.base_path))
                     if item.is_dir():
                         entries.append(AssetEntry(
@@ -139,19 +139,27 @@ class ZipAssetSource(AssetSource):
             self._ensure_open()
             path_prefix = path.rstrip('/') + '/' if path else ''
             
+            # Use a set to track unique directories/files
+            seen = set()
+            
             for name in self._zip.namelist():
                 if name.startswith(path_prefix):
                     rel_name = name[len(path_prefix):]
-                    if '/' not in rel_name or rel_name.endswith('/'):
-                        # Direct item in this directory
-                        if rel_name.endswith('/'):
-                            dir_name = rel_name.rstrip('/')
+                    
+                    # Get the first component (direct child of current directory)
+                    if '/' in rel_name:
+                        first_component = rel_name.split('/')[0]
+                        if first_component and first_component not in seen:
+                            seen.add(first_component)
                             entries.append(AssetEntry(
-                                name=dir_name,
+                                name=first_component,
                                 type="dir",
-                                rel_path=name.rstrip('/')
+                                rel_path=path_prefix + first_component
                             ))
-                        else:
+                    else:
+                        # Direct file in this directory
+                        if rel_name and rel_name not in seen:
+                            seen.add(rel_name)
                             info = self._zip.getinfo(name)
                             entries.append(AssetEntry(
                                 name=rel_name,
@@ -159,6 +167,10 @@ class ZipAssetSource(AssetSource):
                                 size=info.file_size,
                                 rel_path=name
                             ))
+            
+            # Sort entries: directories first, then files, alphabetically
+            entries.sort(key=lambda x: (x.type != "dir", x.name.lower()))
+            
         except Exception as e:
             logger.warning(f"Error listing ZIP directory {path}: {e}")
         return entries

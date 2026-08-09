@@ -11,7 +11,7 @@ Usage:
 import sys
 from pathlib import Path
 from datetime import datetime
-from version import get_version, set_version
+from version import get_version
 
 def bump_version(current: str, bump_type: str) -> str:
     """Bump version according to semantic versioning."""
@@ -30,6 +30,27 @@ def bump_version(current: str, bump_type: str) -> str:
         raise ValueError(f"Invalid bump type: {bump_type}")
     
     return f"{major}.{minor}.{patch}"
+
+def add_version_entry(version: str, description: str):
+    """Add a new version entry to VERSION_HISTORY.md."""
+    version_file = Path(__file__).parent / "VERSION_HISTORY.md"
+    
+    if not version_file.exists():
+        # Create new file with header
+        content = "# Version History\n\n"
+    else:
+        content = version_file.read_text()
+    
+    # Create new version entry
+    today = datetime.now().strftime("%Y-%m-%d")
+    new_entry = f"\n## Version {version} - {today}\n\n### Changes\n- {description}\n"
+    
+    # Insert after the header line (first line)
+    lines = content.split('\n')
+    lines.insert(1, new_entry)
+    content = '\n'.join(lines)
+    
+    version_file.write_text(content)
 
 def add_changelog_entry(version: str, description: str):
     """Add a new entry to the changelog."""
@@ -81,14 +102,15 @@ def main():
     print(f"Bumping version: {current_version} -> {new_version}")
     print(f"Description: {description}")
     
-    # Update VERSION file
-    set_version(new_version)
+    # Add to VERSION_HISTORY.md
+    add_version_entry(new_version, description)
     
     # Add to changelog
     add_changelog_entry(new_version, description)
     
     print(f"✓ Version updated to {new_version}")
-    print(f"✓ Changelog updated")
+    print(f"✓ VERSION_HISTORY.md updated")
+    print(f"✓ CHANGELOG.md updated")
 
 if __name__ == "__main__":
     main()

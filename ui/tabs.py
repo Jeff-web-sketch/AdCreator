@@ -3,6 +3,9 @@
 from pathlib import Path
 from typing import Optional
 import xml.etree.ElementTree as ET
+import logging
+
+logger = logging.getLogger(__name__)
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
@@ -25,21 +28,55 @@ class AssetsTab(QWidget):
         super().__init__()
         self.asset_source = asset_source
         self.project = project
+        self.current_path = ""
         self._setup_ui()
     
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(15)
         
-        # Header
-        title = QLabel("📁 Game Assets")
-        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #7b5eff;")
-        layout.addWidget(title)
+        # Welcome message if no data
+        if not self.asset_source:
+            info_frame = QFrame()
+            info_frame.setStyleSheet("""
+                QFrame {
+                    background-color: #383848;
+                    border-radius: 10px;
+                    padding: 20px;
+                }
+            """)
+            info_layout = QVBoxLayout(info_frame)
+            
+            info = QLabel("⚠️ No game data loaded")
+            info.setStyleSheet("font-size: 18px; font-weight: bold; color: #fbbf24;")
+            info.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            info_layout.addWidget(info)
+            
+            info2 = QLabel("Set game data folder in File menu to browse assets")
+            info2.setStyleSheet("font-size: 14px; color: #c0c0d0;")
+            info2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            info_layout.addWidget(info2)
+            
+            info3 = QLabel("💡 Tip: Go to File → Set Game Data Folder")
+            info3.setStyleSheet("font-size: 13px; color: #9090a0; font-style: italic;")
+            info3.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            info_layout.addWidget(info3)
+            
+            layout.addWidget(info_frame)
+            return
         
         # Quick navigation buttons
         nav_bar = QFrame()
-        nav_bar.setStyleSheet("background-color: #383848; border-radius: 5px; padding: 5px;")
+        nav_bar.setStyleSheet("""
+            QFrame {
+                background-color: #383848;
+                border-radius: 8px;
+                padding: 8px;
+            }
+        """)
         nav_layout = QHBoxLayout(nav_bar)
+        nav_layout.setSpacing(10)
         
         units_btn = QPushButton("⚔️ Units")
         units_btn.setStyleSheet(get_button_style())
@@ -59,19 +96,63 @@ class AssetsTab(QWidget):
         nav_layout.addStretch()
         layout.addWidget(nav_bar)
         
-        # Toolbar
+        # Navigation toolbar
+        nav_toolbar = QFrame()
+        nav_toolbar.setStyleSheet("""
+            QFrame {
+                background-color: #383848;
+                border-radius: 8px;
+                padding: 8px;
+            }
+        """)
+        nav_toolbar_layout = QHBoxLayout(nav_toolbar)
+        nav_toolbar_layout.setSpacing(10)
+        
+        # Current path display
+        self.current_path_label = QLabel("📍 /")
+        self.current_path_label.setStyleSheet("color: #7b5eff; font-size: 12px; font-weight: bold;")
+        self.current_path_label.setToolTip("Current directory path")
+        nav_toolbar_layout.addWidget(self.current_path_label)
+        
+        nav_toolbar_layout.addStretch()
+        
+        # Navigation buttons
+        up_btn = QPushButton("⬆️ Up")
+        up_btn.setStyleSheet(get_button_style())
+        up_btn.clicked.connect(self._go_up)
+        up_btn.setToolTip("Go to parent directory")
+        nav_toolbar_layout.addWidget(up_btn)
+        
+        home_btn = QPushButton("🏠 Root")
+        home_btn.setStyleSheet(get_button_style())
+        home_btn.clicked.connect(self._go_home)
+        home_btn.setToolTip("Go to root directory")
+        nav_toolbar_layout.addWidget(home_btn)
+        
+        layout.addWidget(nav_toolbar)
+        
+        # Action toolbar
         toolbar = QFrame()
-        toolbar.setStyleSheet("background-color: #383848; border-radius: 5px; padding: 5px;")
+        toolbar.setStyleSheet("""
+            QFrame {
+                background-color: #383848;
+                border-radius: 8px;
+                padding: 8px;
+            }
+        """)
         toolbar_layout = QHBoxLayout(toolbar)
+        toolbar_layout.setSpacing(10)
         
         browse_btn = QPushButton("📂 Browse Folder")
         browse_btn.setStyleSheet(get_button_style())
         browse_btn.clicked.connect(self._browse_game_folder)
+        browse_btn.setToolTip("Open detailed folder browser")
         toolbar_layout.addWidget(browse_btn)
         
         import_btn = QPushButton("📥 Import Selected")
         import_btn.setStyleSheet(get_button_style())
         import_btn.clicked.connect(self._import_selected_from_tree)
+        import_btn.setToolTip("Import selected file into your mod")
         toolbar_layout.addWidget(import_btn)
         
         toolbar_layout.addStretch()
@@ -84,28 +165,69 @@ class AssetsTab(QWidget):
         self.asset_tree.itemDoubleClicked.connect(self._on_asset_double_click)
         layout.addWidget(self.asset_tree)
         
-        if not self.asset_source:
-            info = QLabel("⚠️ No game data loaded. Set game data folder in File menu.")
-            info.setStyleSheet("color: #fbbf24; font-size: 14px; padding: 20px;")
-            info.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            layout.addWidget(info)
-        else:
-            self._load_root()
+        self._load_root()
     
     def _load_root(self):
         """Load root directory."""
+        self.current_path = ""
         self.asset_tree.clear()
         self._populate_tree("")
+        self._update_path_display()
     
     def _navigate_to(self, path: str):
         """Navigate to specific path."""
+        self.current_path = path
         self.asset_tree.clear()
         self._populate_tree(path)
+        self._update_path_display()
+    
+    def _go_up(self):
+        """Go to parent directory."""
+        if not self.current_path:
+            return
+        
+        # Remove the last directory component
+        parts = self.current_path.split('/')
+        parts.pop()
+        new_path = '/'.join(parts)
+        
+        self._navigate_to(new_path)
+    
+    def _go_home(self):
+        """Go to root directory."""
+        self._load_root()
+    
+    def _update_path_display(self):
+        """Update the current path display."""
+        if self.current_path:
+            self.current_path_label.setText(f"📍 /{self.current_path}")
+        else:
+            self.current_path_label.setText("📍 /")
     
     def _populate_tree(self, path: str):
         """Populate tree with directory contents."""
         try:
             entries = self.asset_source.list_dir(path)
+            
+            # Add parent directory option if not at root
+            if path:
+                parent_item = QTreeWidgetItem(self.asset_tree)
+                parent_item.setText(0, "⬆️ .. (Parent Directory)")
+                parent_item.setText(1, "dir")
+                parent_item.setText(2, "")
+                parent_item.setForeground(0, QColor("#7b5eff"))
+                parent_item.setData(0, Qt.ItemDataRole.UserRole, "__PARENT__")
+                self.asset_tree.addTopLevelItem(parent_item)
+            
+            if not entries:
+                item = QTreeWidgetItem(self.asset_tree)
+                item.setText(0, f"📭 No items found in {path if path else 'root directory'}")
+                item.setText(1, "")
+                item.setText(2, "")
+                item.setForeground(0, QColor("#9090a0"))
+                self.asset_tree.addTopLevelItem(item)
+                return
+            
             for entry in entries:
                 item = QTreeWidgetItem(self.asset_tree)
                 icon = "📁" if entry.type == "dir" else "📄"
@@ -114,16 +236,28 @@ class AssetsTab(QWidget):
                 item.setText(2, str(entry.size) if entry.size else "")
                 item.setData(0, Qt.ItemDataRole.UserRole, entry.rel_path)
                 self.asset_tree.addTopLevelItem(item)
+                
+            # Update status with count
+            dirs = sum(1 for e in entries if e.type == "dir")
+            files = sum(1 for e in entries if e.type == "file")
+            print(f"Loaded {dirs} directories and {files} files from {path if path else 'root'}")
+            
         except Exception as e:
             print(f"Error populating tree: {e}")
+            logger.error(f"Error populating tree for path {path}: {e}")
     
     def _on_asset_double_click(self, item: QTreeWidgetItem, column: int):
         """Handle double-click on asset."""
-        if item.text(1) == "dir":
+        item_text = item.text(0)
+        
+        # Check if it's the parent directory item
+        if "Parent Directory" in item_text:
+            self._go_up()
+        elif item.text(1) == "dir":
             # Navigate into directory
             rel_path = item.data(0, Qt.ItemDataRole.UserRole)
             if rel_path:
-                self._populate_tree(rel_path)
+                self._navigate_to(rel_path)
         else:
             # Import file
             self._import_item(item)
@@ -873,56 +1007,107 @@ class SettingsTab(QWidget):
     
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(15)
         
         # Header
         title = QLabel("🔧 Mod Settings")
-        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #7b5eff;")
+        title.setStyleSheet("font-size: 16px; font-weight: bold; color: #7b5eff;")
         layout.addWidget(title)
         
         if not self.project or not self.project.is_loaded:
-            info = QLabel("⚠️ No mod loaded. Create or open a mod to edit settings.")
-            info.setStyleSheet("color: #fbbf24; font-size: 14px; padding: 20px;")
+            info_frame = QFrame()
+            info_frame.setStyleSheet("""
+                QFrame {
+                    background-color: #383848;
+                    border-radius: 10px;
+                    padding: 20px;
+                }
+            """)
+            info_layout = QVBoxLayout(info_frame)
+            
+            info = QLabel("⚠️ No mod loaded")
+            info.setStyleSheet("font-size: 16px; font-weight: bold; color: #fbbf24;")
             info.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            layout.addWidget(info)
+            info_layout.addWidget(info)
+            
+            info2 = QLabel("Create or open a mod to edit settings")
+            info2.setStyleSheet("font-size: 14px; color: #c0c0d0;")
+            info2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            info_layout.addWidget(info2)
+            
+            layout.addWidget(info_frame)
         else:
-            # Form
+            # Form with descriptions
             form_frame = QFrame()
             form_frame.setStyleSheet("""
                 QFrame {
-                    background-color: #404050;
-                    border: 2px solid #6a6a8a;
-                    border-radius: 8px;
+                    background-color: #383848;
+                    border-radius: 10px;
                     padding: 20px;
                 }
             """)
             form_layout = QVBoxLayout(form_frame)
+            form_layout.setSpacing(20)
             
             fields = [
-                ("Mod Name (internal)", self.project.info.name),
-                ("Display Label", self.project.info.label),
-                ("Version", self.project.info.version),
-                ("Description", self.project.info.description),
-                ("Dependencies", ", ".join(self.project.info.dependencies)),
+                ("Mod Name (internal)", self.project.info.name, 
+                 "Internal identifier for your mod (no spaces, used in file names)"),
+                ("Display Label", self.project.info.label,
+                 "User-friendly name shown in 0 A.D. mod selection screen"),
+                ("Version", self.project.info.version,
+                 "Version number (format: x.y.z, e.g., 1.0.0)"),
+                ("Description", self.project.info.description,
+                 "Description of what your mod does and its features"),
+                ("Dependencies", ", ".join(self.project.info.dependencies),
+                 "Required mods and their versions (comma-separated, e.g., 0ad=0.28.0)"),
             ]
             
-            for label_text, default_value in fields:
+            for label_text, default_value, description in fields:
+                # Field container
+                field_container = QFrame()
+                field_container.setStyleSheet("""
+                    QFrame {
+                        background-color: #2d2d3d;
+                        border-radius: 8px;
+                        padding: 15px;
+                    }
+                """)
+                field_layout = QVBoxLayout(field_container)
+                field_layout.setSpacing(8)
+                
+                # Label with description
                 field_header = QLabel(f"{label_text}")
-                field_header.setStyleSheet("color: #9090a0; font-size: 10px; margin-bottom: 5px;")
-                form_layout.addWidget(field_header)
+                field_header.setStyleSheet("color: #7b5eff; font-size: 13px; font-weight: bold;")
+                field_layout.addWidget(field_header)
+                
+                desc_label = QLabel(description)
+                desc_label.setStyleSheet("color: #9090a0; font-size: 11px;")
+                desc_label.setWordWrap(True)
+                field_layout.addWidget(desc_label)
                 
                 if label_text == "Description":
                     input_field = QTextEdit()
                     input_field.setPlainText(default_value)
                     input_field.setMaximumHeight(80)
                     input_field.setStyleSheet(get_input_style())
+                    input_field.setPlaceholderText("Enter a detailed description of your mod...")
                 else:
                     input_field = QLineEdit()
                     input_field.setText(default_value)
                     input_field.setStyleSheet(get_input_style())
+                    if label_text == "Mod Name (internal)":
+                        input_field.setPlaceholderText("my_mod_name")
+                    elif label_text == "Display Label":
+                        input_field.setPlaceholderText("My Awesome Mod")
+                    elif label_text == "Version":
+                        input_field.setPlaceholderText("1.0.0")
+                    elif label_text == "Dependencies":
+                        input_field.setPlaceholderText("0ad=0.28.0, othermod=1.0.0")
                 
-                form_layout.addWidget(input_field)
+                field_layout.addWidget(input_field)
                 self.inputs[label_text] = input_field
+                form_layout.addWidget(field_container)
             
             layout.addWidget(form_frame)
             
@@ -930,6 +1115,7 @@ class SettingsTab(QWidget):
             save_btn = QPushButton("✨ Save Settings")
             save_btn.setStyleSheet(get_button_style(accent=True))
             save_btn.clicked.connect(self._save_settings)
+            save_btn.setToolTip("Save all changes to your mod settings")
             layout.addWidget(save_btn)
     
     def _save_settings(self):
@@ -961,57 +1147,131 @@ class OverviewTab(QWidget):
     
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(15)
         
         # Header
         title = QLabel("📊 Mod Overview")
-        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #7b5eff;")
+        title.setStyleSheet("font-size: 16px; font-weight: bold; color: #7b5eff;")
         layout.addWidget(title)
         
         if not self.project or not self.project.is_loaded:
-            info = QLabel("⚠️ No mod loaded. Create or open a mod to view overview.")
-            info.setStyleSheet("color: #fbbf24; font-size: 14px; padding: 20px;")
+            info_frame = QFrame()
+            info_frame.setStyleSheet("""
+                QFrame {
+                    background-color: #383848;
+                    border-radius: 10px;
+                    padding: 20px;
+                }
+            """)
+            info_layout = QVBoxLayout(info_frame)
+            
+            info = QLabel("⚠️ No mod loaded")
+            info.setStyleSheet("font-size: 16px; font-weight: bold; color: #fbbf24;")
             info.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            layout.addWidget(info)
+            info_layout.addWidget(info)
+            
+            info2 = QLabel("Create or open a mod to view overview")
+            info2.setStyleSheet("font-size: 14px; color: #c0c0d0;")
+            info2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            info_layout.addWidget(info2)
+            
+            layout.addWidget(info_frame)
         else:
             # Info card
             info_card = QFrame()
             info_card.setStyleSheet("""
                 QFrame {
-                    background-color: #404050;
-                    border: 2px solid #6a6a8a;
-                    border-radius: 8px;
+                    background-color: #383848;
+                    border-radius: 10px;
                     padding: 20px;
                 }
             """)
             info_layout = QVBoxLayout(info_card)
+            info_layout.setSpacing(15)
             
             info_title = QLabel(f"📦 {self.project.info.label}")
-            info_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #7b5eff;")
+            info_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #7b5eff;")
             info_layout.addWidget(info_title)
             
-            details = QLabel(
-                f"Internal Name: {self.project.info.name}\n"
-                f"Version: {self.project.info.version}\n"
-                f"Type: {self.project.info.type}\n"
-                f"Dependencies: {', '.join(self.project.info.dependencies)}"
-            )
-            details.setStyleSheet("color: #c0c0d0; font-size: 12px;")
-            info_layout.addWidget(details)
+            # Details grid
+            details_frame = QFrame()
+            details_frame.setStyleSheet("""
+                QFrame {
+                    background-color: #2d2d3d;
+                    border-radius: 8px;
+                    padding: 15px;
+                }
+            """)
+            details_layout = QVBoxLayout(details_frame)
             
+            details = QLabel(
+                f"📛 Internal Name: {self.project.info.name}\n"
+                f"📌 Version: {self.project.info.version}\n"
+                f"🏷️ Type: {self.project.info.type}\n"
+                f"🔗 Dependencies: {', '.join(self.project.info.dependencies)}"
+            )
+            details.setStyleSheet("color: #c0c0d0; font-size: 13px;")
+            details_layout.addWidget(details)
+            
+            info_layout.addWidget(details_frame)
             layout.addWidget(info_card)
             
-            # File count
-            files = self.project.list_files()
-            file_count_label = QLabel(f"📁 Total Files: {len(files)}")
-            file_count_label.setStyleSheet("color: #4ade80; font-size: 14px; font-weight: bold;")
-            layout.addWidget(file_count_label)
+            # Stats section
+            stats_frame = QFrame()
+            stats_frame.setStyleSheet("""
+                QFrame {
+                    background-color: #383848;
+                    border-radius: 10px;
+                    padding: 20px;
+                }
+            """)
+            stats_layout = QVBoxLayout(stats_frame)
             
-            # Build button
+            files = self.project.list_files()
+            total_size = 0
+            for f in self.project.files.values():
+                try:
+                    if f.is_binary:
+                        total_size += len(f.content)  # Binary content is already encoded
+                    else:
+                        total_size += len(f.content.encode('utf-8'))
+                except Exception:
+                    pass  # Skip files that can't be sized
+            
+            stats_title = QLabel("📊 Mod Statistics")
+            stats_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #7b5eff;")
+            stats_layout.addWidget(stats_title)
+            
+            stats = QLabel(
+                f"📁 Total Files: {len(files)}\n"
+                f"📏 Total Size: {total_size:,} bytes"
+            )
+            stats.setStyleSheet("color: #c0c0d0; font-size: 13px;")
+            stats_layout.addWidget(stats)
+            
+            layout.addWidget(stats_frame)
+            
+            # Action buttons
+            actions_frame = QFrame()
+            actions_frame.setStyleSheet("""
+                QFrame {
+                    background-color: #383848;
+                    border-radius: 10px;
+                    padding: 15px;
+                }
+            """)
+            actions_layout = QHBoxLayout(actions_frame)
+            actions_layout.setSpacing(10)
+            
             build_btn = QPushButton("🔨 Build .pyromod")
             build_btn.setStyleSheet(get_button_style(accent=True))
             build_btn.clicked.connect(self._build_pyromod)
-            layout.addWidget(build_btn)
+            build_btn.setToolTip("Export your mod as a .pyromod file for distribution")
+            actions_layout.addWidget(build_btn)
+            
+            actions_layout.addStretch()
+            layout.addWidget(actions_frame)
     
     def _build_pyromod(self):
         """Build the project as a .pyromod file."""

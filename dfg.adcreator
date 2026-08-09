@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "info": {
+    "name": "dfg",
+    "version": "1.0.0",
+    "label": "zdfgfd",
+    "description": "dfg",
+    "dependencies": [
+      "0ad=0.28.0"
+    ],
+    "type": "content"
+  },
+  "files": [
+    {
+      "path": "campaigns/new_maps.json",
+      "content": "{\n\t\"Name\": \"Demo campaign - new maps\",\n\t\"Description\": \"Discover the new and improved maps in Release XXVIII with a demo campaign, taking you through all of them.\",\n\t\"Levels\": {},\n\t\"Order\": [],\n\t\"ShowUnavailable\": true\n}\n",
+      "is_binary": false,
+      "created_at": "2026-08-08T17:32:21.727247",
+      "modified_at": "2026-08-08T17:32:21.727266"
+    }
+  ]
+}

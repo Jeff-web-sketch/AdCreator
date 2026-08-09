@@ -102,13 +102,25 @@ def get_input_style() -> str:
         QLineEdit {
             background-color: #1a1a2a;
             color: #ffffff;
-            border: 2px solid #7b5eff;
-            border-radius: 5px;
-            padding: 10px;
-            font-size: 12px;
+            border: 2px solid #6a6a8a;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 13px;
         }
         QLineEdit:focus {
-            border-color: #9a7cff;
+            border-color: #7b5eff;
+            background-color: #252535;
+        }
+        QTextEdit {
+            background-color: #1a1a2a;
+            color: #ffffff;
+            border: 2px solid #6a6a8a;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 13px;
+        }
+        QTextEdit:focus {
+            border-color: #7b5eff;
             background-color: #252535;
         }
     """
@@ -125,7 +137,7 @@ def get_tree_style() -> str:
             font-size: 13px;
         }
         QTreeWidget::item {
-            padding: 8px;
+            padding: 10px 8px;
             border-bottom: 1px solid #2a2a3a;
         }
         QTreeWidget::item:selected {
@@ -140,7 +152,7 @@ def get_tree_style() -> str:
             background-color: #383848;
             color: #ffffff;
             border-bottom: 2px solid #6a6a8a;
-            padding: 8px;
+            padding: 10px 8px;
             font-weight: bold;
             font-size: 13px;
         }

@@ -11,9 +11,10 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QTabWidget, QLabel,
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QLabel,
     QStatusBar, QMenuBar, QMenu, QMessageBox, QFileDialog,
-    QLineEdit, QTextEdit, QDialog, QFormLayout, QDialogButtonBox
+    QLineEdit, QTextEdit, QDialog, QFormLayout, QDialogButtonBox,
+    QFrame, QSplitter, QPushButton, QScrollArea
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction, QPalette
@@ -137,17 +138,195 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         
-        layout = QVBoxLayout(central_widget)
-        layout.setContentsMargins(15, 15, 15, 15)
-        layout.setSpacing(10)
+        main_layout = QHBoxLayout(central_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        
+        # Create a modern sidebar
+        self._create_sidebar(main_layout)
+        
+        # Create main content area
+        self._create_content_area(main_layout)
         
         # Status bar
+        self._setup_status_bar()
+        
+        # Create tabs
+        self._create_tabs()
+    
+    def _create_sidebar(self, parent_layout):
+        """Create a modern sidebar with navigation."""
+        sidebar = QFrame()
+        sidebar.setStyleSheet("""
+            QFrame {
+                background-color: #1a1a2a;
+                border-right: 2px solid #2d2d3d;
+            }
+        """)
+        sidebar.setFixedWidth(200)
+        
+        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(15, 20, 15, 20)
+        sidebar_layout.setSpacing(10)
+        
+        # App logo/title
+        logo_label = QLabel("🎮")
+        logo_label.setStyleSheet("font-size: 48px;")
+        logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sidebar_layout.addWidget(logo_label)
+        
+        app_name = QLabel("Mod Maker")
+        app_name.setStyleSheet("font-size: 18px; font-weight: bold; color: #7b5eff;")
+        app_name.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sidebar_layout.addWidget(app_name)
+        
+        version_label = QLabel(f"v{__version__}")
+        version_label.setStyleSheet("font-size: 12px; color: #9090a0;")
+        version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sidebar_layout.addWidget(version_label)
+        
+        sidebar_layout.addSpacing(20)
+        
+        # Navigation buttons
+        self.nav_buttons = {}
+        nav_items = [
+            ("📁 Assets", "assets"),
+            ("⚔️ Units", "units"),
+            ("✨ New Unit", "new_unit"),
+            ("🔬 Techs", "techs"),
+            ("🏛️ Structures", "structures"),
+            ("✨ Auras", "auras"),
+            ("🔧 Settings", "settings"),
+            ("📊 Overview", "overview"),
+            ("🕒 Recent", "recent"),
+            ("🏗️ Structure", "structure"),
+        ]
+        
+        for icon_text, tab_id in nav_items:
+            btn = QPushButton(icon_text)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: transparent;
+                    color: #c0c0d0;
+                    border: none;
+                    padding: 12px 15px;
+                    text-align: left;
+                    font-size: 14px;
+                    border-radius: 8px;
+                }
+                QPushButton:hover {
+                    background-color: #2d2d3d;
+                    color: #ffffff;
+                }
+                QPushButton:checked {
+                    background-color: #7b5eff;
+                    color: #ffffff;
+                    font-weight: bold;
+                }
+            """)
+            btn.setCheckable(True)
+            btn.clicked.connect(lambda checked, tid=tab_id: self._navigate_to_tab(tid))
+            
+            # Add tooltips
+            tooltips = {
+                "assets": "Browse and import game assets from 0 A.D.",
+                "units": "Edit and manage unit templates",
+                "new_unit": "Create new custom units",
+                "techs": "Manage technologies and research",
+                "structures": "Edit building and structure templates",
+                "auras": "Configure unit auras and effects",
+                "settings": "Configure mod settings and metadata",
+                "overview": "View mod overview and statistics",
+                "recent": "Access recent projects",
+                "structure": "View mod file structure",
+            }
+            btn.setToolTip(tooltips.get(tab_id, ""))
+            
+            self.nav_buttons[tab_id] = btn
+            sidebar_layout.addWidget(btn)
+        
+        sidebar_layout.addStretch()
+        
+        # Bottom section
+        footer_label = QLabel("Made with ❤️")
+        footer_label.setStyleSheet("font-size: 11px; color: #707080;")
+        footer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sidebar_layout.addWidget(footer_label)
+        
+        parent_layout.addWidget(sidebar)
+    
+    def _create_content_area(self, parent_layout):
+        """Create the main content area."""
+        content_frame = QFrame()
+        content_frame.setStyleSheet("""
+            QFrame {
+                background-color: #2d2d3d;
+            }
+        """)
+        
+        content_layout = QVBoxLayout(content_frame)
+        content_layout.setContentsMargins(20, 20, 20, 20)
+        content_layout.setSpacing(15)
+        
+        # Header bar
+        self.header_bar = QFrame()
+        self.header_bar.setStyleSheet("""
+            QFrame {
+                background-color: #383848;
+                border-radius: 10px;
+                padding: 5px;
+            }
+        """)
+        header_layout = QHBoxLayout(self.header_bar)
+        header_layout.setContentsMargins(15, 10, 15, 10)
+        
+        self.page_title = QLabel("📁 Assets")
+        self.page_title.setStyleSheet("font-size: 20px; font-weight: bold; color: #7b5eff;")
+        header_layout.addWidget(self.page_title)
+        
+        header_layout.addStretch()
+        
+        # Quick actions in header
+        quick_actions = QHBoxLayout()
+        quick_actions.setSpacing(10)
+        
+        self.refresh_btn = QPushButton("🔄 Refresh")
+        self.refresh_btn.setStyleSheet(get_button_style())
+        self.refresh_btn.setToolTip("Refresh current view")
+        self.refresh_btn.clicked.connect(self._refresh_current_view)
+        quick_actions.addWidget(self.refresh_btn)
+        
+        self.help_btn = QPushButton("❓ Help")
+        self.help_btn.setStyleSheet(get_button_style())
+        self.help_btn.setToolTip("Get help with current section")
+        self.help_btn.clicked.connect(self._show_help)
+        quick_actions.addWidget(self.help_btn)
+        
+        header_layout.addLayout(quick_actions)
+        content_layout.addWidget(self.header_bar)
+        
+        # Main content area using stacked widget
+        from PyQt6.QtWidgets import QStackedWidget
+        self.content_stack = QStackedWidget()
+        self.content_stack.setStyleSheet("""
+            QStackedWidget {
+                background-color: #2d2d3d;
+                border-radius: 10px;
+            }
+        """)
+        content_layout.addWidget(self.content_stack)
+        
+        parent_layout.addWidget(content_frame, stretch=1)
+    
+    def _setup_status_bar(self):
+        """Setup the status bar."""
         self.status_bar = QStatusBar()
         self.status_bar.setStyleSheet("""
             QStatusBar {
-                background-color: #383848;
+                background-color: #1a1a2a;
                 color: #ffffff;
-                border-top: 1px solid #6a6a8a;
+                border-top: 2px solid #2d2d3d;
+                padding: 5px;
             }
         """)
         self.setStatusBar(self.status_bar)
@@ -163,46 +342,13 @@ class MainWindow(QMainWindow):
         self.lbl_mod_status.setStyleSheet("color: #c0c0d0; font-size: 12px;")
         self.lbl_mod_status.setToolTip("Shows the currently loaded mod project")
         self.status_bar.addPermanentWidget(self.lbl_mod_status)
-        
-        # Tab widget
-        self.tab_widget = QTabWidget()
-        self.tab_widget.setStyleSheet("""
-            QTabWidget::pane {
-                border: 1px solid #6a6a8a;
-                background-color: #2d2d3d;
-                border-radius: 5px;
-            }
-            QTabBar::tab {
-                background-color: #383848;
-                color: #c0c0d0;
-                padding: 12px 24px;
-                border: 1px solid #6a6a8a;
-                border-bottom: none;
-                margin-right: 2px;
-                border-top-left-radius: 5px;
-                border-top-right-radius: 5px;
-                font-size: 13px;
-                font-weight: bold;
-            }
-            QTabBar::tab:selected {
-                background-color: #7b5eff;
-                color: #ffffff;
-            }
-            QTabBar::tab:hover:!selected {
-                background-color: #4d4d5d;
-                color: #ffffff;
-            }
-        """)
-        self.tab_widget.setMovable(True)
-        self.tab_widget.setDocumentMode(True)
-        layout.addWidget(self.tab_widget)
-        
-        # Create tabs
-        self._create_tabs()
     
     def _create_tabs(self):
-        # Clear existing tabs
-        self.tab_widget.clear()
+        # Clear existing content
+        while self.content_stack.count() > 0:
+            widget = self.content_stack.widget(0)
+            self.content_stack.removeWidget(widget)
+            widget.deleteLater()
         
         # Create tab instances
         self.assets_tab = AssetsTab(self.asset_source, self.project)
@@ -216,17 +362,60 @@ class MainWindow(QMainWindow):
         self.recent_tab = RecentTab()
         self.structure_tab = StructureTab(self.project)
         
-        # Add tabs
-        self.tab_widget.addTab(self.assets_tab, "📁 Assets")
-        self.tab_widget.addTab(self.units_tab, "⚔️ Units")
-        self.tab_widget.addTab(self.new_unit_tab, "✨ New Unit")
-        self.tab_widget.addTab(self.techs_tab, "🔬 Techs")
-        self.tab_widget.addTab(self.structures_tab, "🏛️ Structures")
-        self.tab_widget.addTab(self.auras_tab, "✨ Auras")
-        self.tab_widget.addTab(self.settings_tab, "🔧 Settings")
-        self.tab_widget.addTab(self.overview_tab, "📊 Overview")
-        self.tab_widget.addTab(self.recent_tab, "🕒 Recent")
-        self.tab_widget.addTab(self.structure_tab, "🏗️ Structure")
+        # Add to stacked widget
+        self.content_stack.addWidget(self.assets_tab)
+        self.content_stack.addWidget(self.units_tab)
+        self.content_stack.addWidget(self.new_unit_tab)
+        self.content_stack.addWidget(self.techs_tab)
+        self.content_stack.addWidget(self.structures_tab)
+        self.content_stack.addWidget(self.auras_tab)
+        self.content_stack.addWidget(self.settings_tab)
+        self.content_stack.addWidget(self.overview_tab)
+        self.content_stack.addWidget(self.recent_tab)
+        self.content_stack.addWidget(self.structure_tab)
+        
+        # Map tab IDs to indices
+        self.tab_map = {
+            "assets": 0,
+            "units": 1,
+            "new_unit": 2,
+            "techs": 3,
+            "structures": 4,
+            "auras": 5,
+            "settings": 6,
+            "overview": 7,
+            "recent": 8,
+            "structure": 9,
+        }
+        
+        # Set default tab
+        self._navigate_to_tab("assets")
+    
+    def _navigate_to_tab(self, tab_id: str):
+        """Navigate to a specific tab using sidebar."""
+        if tab_id in self.tab_map:
+            # Update button states
+            for btn_id, btn in self.nav_buttons.items():
+                btn.setChecked(btn_id == tab_id)
+            
+            # Switch content
+            index = self.tab_map[tab_id]
+            self.content_stack.setCurrentIndex(index)
+            
+            # Update header title
+            titles = {
+                "assets": "📁 Assets",
+                "units": "⚔️ Units",
+                "new_unit": "✨ New Unit",
+                "techs": "🔬 Technologies",
+                "structures": "🏛️ Structures",
+                "auras": "✨ Auras",
+                "settings": "🔧 Settings",
+                "overview": "📊 Overview",
+                "recent": "🕒 Recent Projects",
+                "structure": "🏗️ Mod Structure",
+            }
+            self.page_title.setText(titles.get(tab_id, "Unknown"))
     
     def _auto_load_game_data(self):
         # Try to load from settings
@@ -365,7 +554,7 @@ class MainWindow(QMainWindow):
                 self._update_status_bar()
                 self._create_tabs()
                 QMessageBox.information(self, "Success", f"Project '{label}' created successfully!")
-                self.tab_widget.setCurrentIndex(4)  # Overview tab
+                self._navigate_to_tab("overview")  # Navigate to overview tab
                 
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to create project: {e}")
@@ -391,35 +580,61 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Error", f"Failed to load project: {e}")
     
     def action_set_game_folder(self):
+        """Open a dialog to select the 0 A.D. game data folder or ZIP file."""
+        # Start with a more user-friendly approach - show folder selection first
+        folder = QFileDialog.getExistingDirectory(
+            self, "Select 0 A.D. Installation Folder",
+            self.settings.game_data_path or str(Path.home())
+        )
+        
+        if folder:
+            path_obj = Path(folder)
+            
+            # Check if this is the 0 A.D. installation folder
+            public_zip = path_obj / "public.zip"
+            public_folder = path_obj / "binaries" / "data" / "mods" / "public"
+            
+            if public_zip.exists():
+                self._set_asset_source(public_zip, is_zip=True)
+                QMessageBox.information(self, "Success", f"Found 0 A.D. data: {public_zip.name}")
+            elif public_folder.exists():
+                self._set_asset_source(public_folder, is_zip=False)
+                QMessageBox.information(self, "Success", f"Found 0 A.D. data: public folder")
+            else:
+                # If standard locations not found, ask if they want to select a specific file
+                reply = QMessageBox.question(
+                    self, "Data Not Found",
+                    f"Could not find standard 0 A.D. data in this folder.\n\n"
+                    f"Do you want to select a specific public.zip file instead?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes
+                )
+                
+                if reply == QMessageBox.StandardButton.Yes:
+                    self._select_specific_zip_file()
+                else:
+                    # Try using the selected folder anyway
+                    self._set_asset_source(path_obj, is_zip=False)
+                    QMessageBox.warning(self, "Warning", "Using selected folder. Data may not be valid.")
+        else:
+            # If folder selection cancelled, try file selection
+            self._select_specific_zip_file()
+    
+    def _select_specific_zip_file(self):
+        """Let user select a specific ZIP file."""
         path, _ = QFileDialog.getOpenFileName(
-            self, "Select 0 A.D. Data File (public.zip or folder)",
+            self, "Select 0 A.D. public.zip File",
             self.settings.game_data_path or str(Path.home()),
             "ZIP Files (*.zip);;All Files (*)"
         )
         
-        if not path:
-            folder = QFileDialog.getExistingDirectory(
-                self, "Select 0 A.D. Data Folder",
-                self.settings.game_data_path or str(Path.home())
-            )
-            if folder:
-                path = folder
-        
         if path:
             path_obj = Path(path)
-            
-            if path_obj.is_file() and path_obj.suffix == '.zip':
+            if path_obj.exists() and path_obj.suffix == '.zip':
                 self._set_asset_source(path_obj, is_zip=True)
-            elif path_obj.is_dir():
-                public_zip = path_obj / "public.zip"
-                public_folder = path_obj / "binaries" / "data" / "mods" / "public"
-                
-                if public_zip.exists():
-                    self._set_asset_source(public_zip, is_zip=True)
-                elif public_folder.exists():
-                    self._set_asset_source(public_folder, is_zip=False)
-                else:
-                    self._set_asset_source(path_obj, is_zip=False)
+                QMessageBox.information(self, "Success", f"Loaded 0 A.D. data from: {path_obj.name}")
+            else:
+                QMessageBox.warning(self, "Invalid File", "Please select a valid .zip file")
     
     def action_build(self):
         if not self.project or not self.project.is_loaded:
@@ -494,6 +709,110 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Success", "0 A.D. launched with your mod!")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to launch 0 A.D.: {e}")
+    
+    def _refresh_current_view(self):
+        """Refresh the current view."""
+        current_index = self.content_stack.currentIndex()
+        if current_index == 0:  # Assets
+            if hasattr(self.assets_tab, '_load_root'):
+                self.assets_tab._load_root()
+        elif current_index == 1:  # Units
+            if hasattr(self.units_tab, '_refresh_template_list'):
+                self.units_tab._refresh_template_list()
+        elif current_index == 8:  # Recent
+            if hasattr(self.recent_tab, '_load_recent'):
+                self.recent_tab._load_recent()
+        
+        QMessageBox.information(self, "Refreshed", "Current view has been refreshed!")
+    
+    def _show_help(self):
+        """Show help for the current section."""
+        current_index = self.content_stack.currentIndex()
+        help_texts = {
+            0: """📁 Assets Tab Help
+
+Browse and import game assets from 0 A.D.:
+
+• Use the quick navigation buttons to jump to specific folders
+• Double-click files to import them into your mod
+• Use "Browse Folder" for detailed navigation
+• Import selected files with the import button
+
+Tips:
+• Start with Units, Techs, or Structures for common assets
+• Files are automatically added to your mod project
+• Check the Overview tab to see imported files""",
+            1: """⚔️ Units Tab Help
+
+Edit and manage unit templates:
+
+• Select a unit template from the list
+• Edit properties in the form
+• Save changes to update the unit
+• Use the search to find specific units
+
+Tips:
+• Units inherit from parent templates
+• Changes affect your mod's version of the unit
+• Test units in 0 A.D. after modifications""",
+            2: """✨ New Unit Tab Help
+
+Create new custom units:
+
+• Fill in the unit details
+• Select a parent template
+• Configure properties like health, speed, costs
+• Save to add to your mod
+
+Tips:
+• Choose an appropriate parent template
+• Start with similar units as templates
+• Test new units in-game""",
+            6: """🔧 Settings Tab Help
+
+Configure your mod project:
+
+• Set mod name and display label
+• Configure version number
+• Add description
+• Set dependencies
+
+Each setting:
+• Mod Name: Internal identifier (no spaces)
+• Display Label: User-friendly name shown in game
+• Version: Follow semantic versioning (x.y.z)
+• Description: What your mod does
+• Dependencies: Required mods/versions""",
+            7: """📊 Overview Tab Help
+
+View your mod's structure and contents:
+
+• See all files in your mod
+• View mod information
+• Check mod statistics
+• Verify mod structure
+
+Tips:
+• Use this to verify your mod is complete
+• Check file counts and sizes
+• Review mod info before building""",
+            8: """🕒 Recent Tab Help
+
+Access recent projects:
+
+• Double-click to open a project
+• Right-click to remove from recent list
+• Projects are automatically added when opened
+• Missing projects are shown in gray
+
+Tips:
+• Recent projects persist between sessions
+• Use this to quickly resume work
+• Clean up old projects to keep list manageable""",
+        }
+        
+        help_text = help_texts.get(current_index, "No help available for this section yet.")
+        QMessageBox.information(self, "Help", help_text)
     
     def action_about(self):
         about_text = f"""
