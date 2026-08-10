@@ -33,33 +33,30 @@ def run():
     
     # Show startup dialog
     startup = StartupDialog()
-    if startup.exec() == QDialog.DialogCode.Accepted:
+    dialog_result = startup.exec()
+    
+    # Create main window
+    window = MainWindow()
+    window.show()
+    
+    if dialog_result == QDialog.DialogCode.Accepted:
         selected_path = startup.selected_path
         if selected_path:
             # Load selected project
-            window = MainWindow()
-            window.show()
             try:
-                from core.mod import ModProject
+                from mod import ModProject
                 window.project = ModProject(Path(selected_path))
                 window.project.load()
                 window.settings.last_mod_dir = str(window.project.project_path)
                 window.settings.add_recent(str(window.project.project_path), window.project.info.label)
                 window.settings.save()
-                window._update_status_bar()
-                window._create_tabs()
+                window._update_status_bar(f"Loaded project: {window.project.project_name}")
+                window._refresh_all_tabs()
             except Exception as e:
-                QMessageBox.critical(None, "Error", f"Failed to load project: {e}")
-                window.show()
+                QMessageBox.critical(window, "Error", f"Failed to load project: {e}")
         else:
             # Create new mod
-            window = MainWindow()
-            window.show()
             window.action_new_mod()
-    else:
-        # Skip to main window
-        window = MainWindow()
-        window.show()
     
     sys.exit(app.exec())
 

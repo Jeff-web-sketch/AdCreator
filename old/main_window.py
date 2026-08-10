@@ -103,14 +103,32 @@ class MainWindow(QMainWindow):
         sidebar = self._create_sidebar()
         main_layout.addWidget(sidebar)
         
-        # Content area
+        # Content area with header
+        content_container = QWidget()
+        content_layout = QVBoxLayout(content_container)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(0)
+        
+        # Dynamic header
+        self.header_frame = self._create_header()
+        content_layout.addWidget(self.header_frame)
+        
+        # Content stack
         self.content_stack = QStackedWidget()
         self.content_stack.setStyleSheet("background-color: #1a1a2a;")
-        main_layout.addWidget(self.content_stack, 1)
+        content_layout.addWidget(self.content_stack, 1)
+        
+        main_layout.addWidget(content_container, 1)
         
         # Status bar
         self.status_bar = QStatusBar()
-        self.status_bar.setStyleSheet("background-color: #2d2d3d; color: #c0c0d0;")
+        self.status_bar.setStyleSheet("""
+            QStatusBar {
+                background-color: #2d2d3d;
+                color: #c0c0d0;
+                border-top: 1px solid #4a4a6a;
+            }
+        """)
         self.setStatusBar(self.status_bar)
         
         # Create tabs
@@ -119,57 +137,180 @@ class MainWindow(QMainWindow):
     def _create_sidebar(self) -> QFrame:
         """Create the navigation sidebar."""
         sidebar = QFrame()
-        sidebar.setFixedWidth(200)
+        sidebar.setFixedWidth(220)
         sidebar.setStyleSheet("""
             QFrame {
-                background-color: #2d2d3d;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #2d2d3d, stop:1 #252535);
                 border-right: 2px solid #4a4a6a;
             }
         """)
         
         layout = QVBoxLayout(sidebar)
-        layout.setContentsMargins(15, 20, 15, 20)
-        layout.setSpacing(10)
+        layout.setContentsMargins(15, 25, 15, 25)
+        layout.setSpacing(12)
         
-        # App title
+        # App logo/title area
+        logo_area = QFrame()
+        logo_area.setStyleSheet("""
+            QFrame {
+                background-color: #1a1a2a;
+                border-radius: 12px;
+                padding: 15px;
+            }
+        """)
+        logo_layout = QVBoxLayout(logo_area)
+        
         title = QLabel("🎮 0 A.D. Mod Maker")
         title.setStyleSheet("font-size: 16px; font-weight: bold; color: #7b5eff;")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title)
+        logo_layout.addWidget(title)
         
-        layout.addSpacing(20)
+        version_label = QLabel(f"v{__version__}")
+        version_label.setStyleSheet("color: #707080; font-size: 11px;")
+        version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        logo_layout.addWidget(version_label)
+        
+        layout.addWidget(logo_area)
+        
+        layout.addSpacing(15)
+        
+        # Navigation section label
+        nav_label = QLabel("📱 Navigation")
+        nav_label.setStyleSheet("font-size: 12px; font-weight: bold; color: #707080; text-transform: uppercase;")
+        layout.addWidget(nav_label)
         
         # Navigation buttons
         self.nav_buttons = {}
         
         nav_items = [
-            ("overview", "📊 Overview"),
-            ("assets", "📁 Assets"),
-            ("units", "⚔️ Units"),
-            ("new_unit", "➕ New Unit"),
-            ("structures", "🏗️ Structures"),
-            ("techs", "🔬 Technologies"),
-            ("auras", "✨ Auras"),
-            ("settings", "⚙️ Settings"),
+            ("overview", "📊 Overview", "View project statistics and quick actions"),
+            ("assets", "📁 Assets", "Browse and manage game assets"),
+            ("units", "⚔️ Units", "Edit unit templates and properties"),
+            ("new_unit", "➕ New Unit", "Create a new unit from scratch"),
+            ("structures", "🏗️ Structures", "Manage building templates"),
+            ("techs", "🔬 Technologies", "Configure research and upgrades"),
+            ("auras", "✨ Auras", "Manage special effects and auras"),
+            ("settings", "⚙️ Settings", "Configure application settings"),
         ]
         
-        for key, label in nav_items:
+        for key, label, tooltip in nav_items:
             btn = QPushButton(label)
-            btn.setStyleSheet(get_button_style())
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: transparent;
+                    color: #c0c0d0;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 12px 15px;
+                    font-size: 13px;
+                    text-align: left;
+                }
+                QPushButton:hover {
+                    background-color: #383848;
+                    color: #ffffff;
+                }
+                QPushButton:checked {
+                    background-color: #7b5eff;
+                    color: white;
+                    font-weight: bold;
+                }
+            """)
             btn.setCheckable(True)
             btn.clicked.connect(lambda checked, k=key: self._navigate_to(k))
+            btn.setToolTip(tooltip)
             layout.addWidget(btn)
             self.nav_buttons[key] = btn
         
         layout.addStretch()
         
-        # Project info
+        # Project info card
+        project_card = QFrame()
+        project_card.setStyleSheet("""
+            QFrame {
+                background-color: #1a1a2a;
+                border-radius: 10px;
+                padding: 12px;
+            }
+        """)
+        project_layout = QVBoxLayout(project_card)
+        
+        project_title = QLabel("📁 Current Project")
+        project_title.setStyleSheet("font-size: 11px; font-weight: bold; color: #707080;")
+        project_layout.addWidget(project_title)
+        
         self.project_label = QLabel("No project loaded")
-        self.project_label.setStyleSheet("color: #9090a0; font-size: 12px;")
+        self.project_label.setStyleSheet("color: #c0c0d0; font-size: 12px;")
         self.project_label.setWordWrap(True)
-        layout.addWidget(self.project_label)
+        project_layout.addWidget(self.project_label)
+        
+        layout.addWidget(project_card)
         
         return sidebar
+    
+    def _create_header(self) -> QFrame:
+        """Create the dynamic header for the content area."""
+        header = QFrame()
+        header.setStyleSheet("""
+            QFrame {
+                background-color: #2d2d3d;
+                border-bottom: 2px solid #4a4a6a;
+                padding: 15px 20px;
+            }
+        """)
+        
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(20, 15, 20, 15)
+        header_layout.setSpacing(15)
+        
+        # Page title
+        self.page_title = QLabel("📊 Overview")
+        self.page_title.setStyleSheet("font-size: 20px; font-weight: bold; color: #7b5eff;")
+        header_layout.addWidget(self.page_title)
+        
+        header_layout.addStretch()
+        
+        # Contextual help button
+        help_btn = QPushButton("❓ Help")
+        help_btn.setStyleSheet(get_button_style())
+        help_btn.clicked.connect(self._show_help)
+        help_btn.setMinimumWidth(80)
+        header_layout.addWidget(help_btn)
+        
+        # Refresh button
+        refresh_btn = QPushButton("🔄 Refresh")
+        refresh_btn.setStyleSheet(get_button_style())
+        refresh_btn.clicked.connect(self._refresh_current_tab)
+        refresh_btn.setMinimumWidth(80)
+        header_layout.addWidget(refresh_btn)
+        
+        return header
+    
+    def _update_header(self, title: str):
+        """Update the header title."""
+        self.page_title.setText(title)
+    
+    def _show_help(self):
+        """Show help for the current tab."""
+        current_widget = self.content_stack.currentWidget()
+        if hasattr(current_widget, 'get_help_text'):
+            help_text = current_widget.get_help_text()
+            QMessageBox.information(self, "Help", help_text)
+        else:
+            QMessageBox.information(self, "Help", 
+                "General Help:\n\n"
+                "• Use the sidebar to navigate between different sections\n"
+                "• Most tabs have refresh buttons to reload content\n"
+                "• Check the Settings tab to configure game data paths\n"
+                "• Save your work regularly using the save button\n"
+                "• Build your mod as a .pyromod file when ready")
+    
+    def _refresh_current_tab(self):
+        """Refresh the current tab."""
+        current_widget = self.content_stack.currentWidget()
+        if hasattr(current_widget, 'refresh'):
+            current_widget.refresh()
+            self._update_status_bar("Refreshed current tab")
     
     def _create_tabs(self):
         """Create all tab pages."""
@@ -217,6 +358,19 @@ class MainWindow(QMainWindow):
         # Update button states
         for key, btn in self.nav_buttons.items():
             btn.setChecked(key == tab_key)
+        
+        # Update header
+        tab_titles = {
+            "overview": "📊 Overview",
+            "assets": "📁 Asset Browser",
+            "units": "⚔️ Units Editor",
+            "new_unit": "➕ Create Unit",
+            "structures": "🏗️ Structures",
+            "techs": "🔬 Technologies",
+            "auras": "✨ Auras",
+            "settings": "⚙️ Settings"
+        }
+        self._update_header(tab_titles.get(tab_key, "Overview"))
         
         # Show appropriate tab
         if tab_key == "overview":
@@ -326,3 +480,13 @@ class MainWindow(QMainWindow):
             self.techs_tab.refresh()
             self.auras_tab.refresh()
             self.settings_tab.refresh()
+        else:
+            # Clear project info
+            self.project_label.setText("No project loaded")
+    
+    def _update_status_bar(self, message: str = ""):
+        """Update the status bar with a message."""
+        if message:
+            self.status_bar.showMessage(message, 5000)
+        else:
+            self.status_bar.clearMessage()

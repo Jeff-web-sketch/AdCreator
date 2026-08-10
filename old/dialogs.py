@@ -6,7 +6,7 @@ from typing import Optional
 
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, QMenu
+    QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, QMenu, QFrame
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
@@ -27,36 +27,119 @@ class StartupDialog(QDialog):
     
     def _setup_ui(self):
         self.setWindowTitle(f"0 A.D. Mod Maker v{__version__} - Welcome")
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(900, 700)
         
         layout = QVBoxLayout(self)
-        layout.setSpacing(20)
-        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(25)
+        layout.setContentsMargins(40, 40, 40, 40)
+        
+        # Welcome card
+        welcome_card = QFrame()
+        welcome_card.setStyleSheet("""
+            QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #2d2d3d, stop:1 #383848);
+                border-radius: 15px;
+                padding: 30px;
+            }
+        """)
+        welcome_layout = QVBoxLayout(welcome_card)
         
         # Header
-        title = QLabel("🎮 0 A.D. Mod Maker")
-        title.setStyleSheet("font-size: 28px; font-weight: bold; color: #7b5eff;")
+        title = QLabel("🎮 Welcome to 0 A.D. Mod Maker")
+        title.setStyleSheet("font-size: 32px; font-weight: bold; color: #7b5eff;")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title)
+        welcome_layout.addWidget(title)
         
-        subtitle = QLabel("Select a recent project or create a new mod")
-        subtitle.setStyleSheet("color: #c0c0d0; font-size: 16px;")
+        subtitle = QLabel("Create and manage your 0 A.D. mods with ease")
+        subtitle.setStyleSheet("color: #c0c0d0; font-size: 18px;")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(subtitle)
+        welcome_layout.addWidget(subtitle)
         
-        layout.addSpacing(15)
+        welcome_layout.addSpacing(15)
         
-        # Help text
-        help_text = QLabel("💡 Tip: Double-click a project to open it quickly")
-        help_text.setStyleSheet("color: #9090a0; font-size: 13px; font-style: italic;")
-        help_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(help_text)
+        # Feature highlights
+        features_layout = QHBoxLayout()
+        features_layout.setSpacing(20)
         
-        layout.addSpacing(15)
+        features = [
+            ("📁", "Asset Management", "Browse and manage game assets"),
+            ("⚔️", "Unit Editor", "Create and customize units"),
+            ("🏗️", "Structure Builder", "Design buildings and structures"),
+            ("🔬", "Tech Research", "Manage technologies and upgrades")
+        ]
         
-        # Recent projects
+        for icon, title, desc in features:
+            feature_frame = QFrame()
+            feature_frame.setStyleSheet("""
+                QFrame {
+                    background-color: #1a1a2a;
+                    border-radius: 10px;
+                    padding: 15px;
+                }
+            """)
+            feature_layout = QVBoxLayout(feature_frame)
+            
+            icon_label = QLabel(icon)
+            icon_label.setStyleSheet("font-size: 24px;")
+            icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            feature_layout.addWidget(icon_label)
+            
+            feature_title = QLabel(title)
+            feature_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #7b5eff;")
+            feature_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            feature_layout.addWidget(feature_title)
+            
+            feature_desc = QLabel(desc)
+            feature_desc.setStyleSheet("color: #9090a0; font-size: 11px;")
+            feature_desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            feature_desc.setWordWrap(True)
+            feature_layout.addWidget(feature_desc)
+            
+            features_layout.addWidget(feature_frame)
+        
+        welcome_layout.addLayout(features_layout)
+        layout.addWidget(welcome_card)
+        
+        layout.addSpacing(20)
+        
+        # Quick actions section
+        actions_label = QLabel("⚡ Quick Actions")
+        actions_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #7b5eff;")
+        layout.addWidget(actions_label)
+        
+        actions_layout = QHBoxLayout()
+        actions_layout.setSpacing(15)
+        
+        new_mod_btn = QPushButton("✨ Create New Mod")
+        new_mod_btn.setStyleSheet(get_button_style(accent=True))
+        new_mod_btn.clicked.connect(self.accept)
+        new_mod_btn.setToolTip("Create a brand new mod project from scratch")
+        new_mod_btn.setMinimumHeight(50)
+        actions_layout.addWidget(new_mod_btn)
+        
+        open_btn = QPushButton("📂 Open Existing Mod")
+        open_btn.setStyleSheet(get_button_style())
+        open_btn.clicked.connect(self._open_other_mod)
+        open_btn.setToolTip("Open an existing .adcreator project file")
+        open_btn.setMinimumHeight(50)
+        actions_layout.addWidget(open_btn)
+        
+        skip_btn = QPushButton("⏭️ Explore App")
+        skip_btn.setStyleSheet(get_button_style())
+        skip_btn.clicked.connect(self.reject)
+        skip_btn.setToolTip("Open the main window without loading a project")
+        skip_btn.setMinimumHeight(50)
+        actions_layout.addWidget(skip_btn)
+        
+        actions_layout.addStretch()
+        layout.addLayout(actions_layout)
+        
+        layout.addSpacing(20)
+        
+        # Recent projects section
         recent_label = QLabel("🕒 Recent Projects")
-        recent_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #7b5eff;")
+        recent_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #7b5eff;")
         layout.addWidget(recent_label)
         
         self.recent_tree = QTreeWidget()
@@ -67,40 +150,22 @@ class StartupDialog(QDialog):
         self.recent_tree.setSelectionBehavior(QTreeWidget.SelectionBehavior.SelectRows)
         self.recent_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.recent_tree.customContextMenuRequested.connect(self._show_context_menu)
-        self.recent_tree.setToolTip("Right-click for more options")
+        self.recent_tree.setToolTip("Double-click to open • Right-click for options")
+        self.recent_tree.setMinimumHeight(200)
         layout.addWidget(self.recent_tree)
         
         # Empty state message
         self.empty_label = QLabel("🚀 No recent projects found.\n\nCreate your first mod to get started!")
-        self.empty_label.setStyleSheet("color: #9090a0; font-size: 14px; padding: 20px;")
+        self.empty_label.setStyleSheet("color: #9090a0; font-size: 16px; padding: 30px;")
         self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.empty_label.setVisible(False)
         layout.addWidget(self.empty_label)
         
-        # Action buttons
-        button_layout = QHBoxLayout()
-        button_layout.setSpacing(15)
-        
-        new_mod_btn = QPushButton("✨ Create New Mod")
-        new_mod_btn.setStyleSheet(get_button_style(accent=True))
-        new_mod_btn.clicked.connect(self.accept)
-        new_mod_btn.setToolTip("Create a brand new mod project from scratch")
-        button_layout.addWidget(new_mod_btn)
-        
-        open_btn = QPushButton("📂 Open Other Mod")
-        open_btn.setStyleSheet(get_button_style())
-        open_btn.clicked.connect(self._open_other_mod)
-        open_btn.setToolTip("Open an existing .adcreator project file")
-        button_layout.addWidget(open_btn)
-        
-        skip_btn = QPushButton("⏭️ Skip to Main Window")
-        skip_btn.setStyleSheet(get_button_style())
-        skip_btn.clicked.connect(self.reject)
-        skip_btn.setToolTip("Open the main window without loading a project")
-        button_layout.addWidget(skip_btn)
-        
-        button_layout.addStretch()
-        layout.addLayout(button_layout)
+        # Help tip
+        help_label = QLabel("💡 Tip: Use keyboard shortcuts for faster navigation (see Help menu)")
+        help_label.setStyleSheet("color: #707080; font-size: 12px; font-style: italic;")
+        help_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(help_label)
     
     def _load_recent_projects(self):
         settings = AppSettings()
