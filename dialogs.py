@@ -6,13 +6,13 @@ from typing import Optional
 
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTreeWidget, QTreeWidgetItem, QLineEdit, QMessageBox, QMenu
+    QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, QMenu
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 
-from core.settings import AppSettings
-from ui.styles import get_tree_style, get_button_style
+from settings import AppSettings
+from styles import get_tree_style, get_button_style
 from version import __version__
 
 
@@ -135,6 +135,26 @@ class StartupDialog(QDialog):
                 item.setForeground(2, QColor("#707080"))
                 item.setText(0, f"❌ {entry.get('label', 'Unknown')} (Not Found)")
     
+    def _on_recent_double_click(self, item: QTreeWidgetItem, column: int):
+        path = item.data(0, Qt.ItemDataRole.UserRole)
+        if path and Path(path).exists():
+            self.selected_path = path
+            self.accept()
+    
+    def _open_other_mod(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Select Project File",
+            str(Path.home()),
+            "AD Creator Projects (*.adcreator);;All Files (*)"
+        )
+        
+        if file_path:
+            if file_path.endswith('.adcreator'):
+                self.selected_path = file_path
+                self.accept()
+            else:
+                QMessageBox.warning(self, "Invalid Project", "Selected file is not a valid .adcreator project.")
+    
     def _show_context_menu(self, position):
         """Show context menu for recent projects."""
         item = self.recent_tree.itemAt(position)
@@ -160,25 +180,3 @@ class StartupDialog(QDialog):
         settings.remove_recent(path)
         self.recent_tree.clear()
         self._load_recent_projects()
-    
-    def _on_recent_double_click(self, item: QTreeWidgetItem, column: int):
-        path = item.data(0, Qt.ItemDataRole.UserRole)
-        if path and Path(path).exists():
-            self.selected_path = path
-            self.accept()
-    
-    def _open_other_mod(self):
-        from PyQt6.QtWidgets import QFileDialog
-        
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select Project File",
-            str(Path.home()),
-            "AD Creator Projects (*.adcreator);;All Files (*)"
-        )
-        
-        if file_path:
-            if file_path.endswith('.adcreator'):
-                self.selected_path = file_path
-                self.accept()
-            else:
-                QMessageBox.warning(self, "Invalid Project", "Selected file is not a valid .adcreator project.")

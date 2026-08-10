@@ -17,6 +17,20 @@
       "is_binary": false,
       "created_at": "2026-08-08T17:32:21.727247",
       "modified_at": "2026-08-08T17:32:21.727266"
+    },
+    {
+      "path": "simulation/templates/units/athen/cavalry_swordsman_b.xml",
+      "content": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<Entity parent=\"civ/athen|template_unit_cavalry_melee_swordsman\">\n  <Attack>\n    <Melee>\n      <AttackName context=\"Name of an attack using a single-edged sword.\">Sword</AttackName>\n    </Melee>\n  </Attack>\n  <Identity>\n    <SelectionGroupName>units/athen/cavalry_swordsman_b</SelectionGroupName>\n    <GenericName>Greek Cavalry</GenericName>\n    <SpecificName>Hippe\u00fas</SpecificName>\n    <Icon>units/athen/cavalry_swordsman.png</Icon>\n    <Requirements>\n      <Techs datatype=\"tokens\">phase_town</Techs>\n    </Requirements>\n  </Identity>\n  <Promotion>\n    <Entity>units/athen/cavalry_swordsman_a</Entity>\n  </Promotion>\n  <VisualActor>\n    <Actor>units/athenians/cavalry_swordsman_b_m.xml</Actor>\n  </VisualActor>\n</Entity>\n",
+      "is_binary": false,
+      "created_at": "2026-08-09T07:28:20.985427",
+      "modified_at": "2026-08-09T07:28:20.985442"
+    },
+    {
+      "path": "simulation/templates/units/regsg.xml",
+      "content": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<Entity parent=\"merc_black_cloak\">\n  <Identity>\n    <Civ>athen</Civ>\n    <GenericName>dfg</GenericName>\n  </Identity>\n</Entity>",
+      "is_binary": false,
+      "created_at": "2026-08-09T07:28:38.076966",
+      "modified_at": "2026-08-09T07:28:38.076984"
     }
   ]
 }

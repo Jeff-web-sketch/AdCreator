@@ -22,8 +22,8 @@ if __package__ in (None, ""):
 from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox
 from PyQt6.QtCore import Qt
 
-from ui.dialogs import StartupDialog
-from ui.main_window import MainWindow
+from dialogs import StartupDialog
+from main_window import MainWindow
 
 
 def run():

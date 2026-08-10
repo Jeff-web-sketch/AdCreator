@@ -146,7 +146,7 @@ class ZipAssetSource(AssetSource):
                 if name.startswith(path_prefix):
                     rel_name = name[len(path_prefix):]
                     
-                    # Get the first component (direct child of current directory)
+                    # Get the first component (immediate child)
                     if '/' in rel_name:
                         first_component = rel_name.split('/')[0]
                         if first_component and first_component not in seen:
