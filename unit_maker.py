@@ -411,18 +411,33 @@ class UnitMaker(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(15)
+        layout.setSpacing(20)
+        
+        # Use scroll area for better visibility
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea {
+                background-color: transparent;
+                border: none;
+            }
+        """)
+        
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setSpacing(20)
         
         # Form
         form = QFrame()
         form.setStyleSheet("""
             QFrame {
                 background-color: #2d2d3d;
-                border-radius: 8px;
-                padding: 20px;
+                border-radius: 12px;
+                padding: 25px;
             }
         """)
         form_layout = QVBoxLayout(form)
+        form_layout.setSpacing(18)
         
         # Form fields
         self.civ_input = self.create_form_field("Civilization:", "generic")
@@ -440,8 +455,9 @@ class UnitMaker(QMainWindow):
         self.classes_input = self.create_form_field("Classes:", "")
         form_layout.addLayout(self.classes_input['layout'])
         
-        layout.addWidget(form)
-        layout.addStretch()
+        scroll_layout.addWidget(form)
+        scroll.setWidget(scroll_content)
+        layout.addWidget(scroll)
         
         return tab
     
@@ -450,17 +466,32 @@ class UnitMaker(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(15)
+        layout.setSpacing(20)
+        
+        # Use scroll area for better visibility
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea {
+                background-color: transparent;
+                border: none;
+            }
+        """)
+        
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setSpacing(20)
         
         form = QFrame()
         form.setStyleSheet("""
             QFrame {
                 background-color: #2d2d3d;
-                border-radius: 8px;
-                padding: 20px;
+                border-radius: 12px;
+                padding: 25px;
             }
         """)
         form_layout = QVBoxLayout(form)
+        form_layout.setSpacing(18)
         
         self.health_input = self.create_number_field("Max Health:", 100)
         form_layout.addLayout(self.health_input['layout'])
@@ -471,8 +502,9 @@ class UnitMaker(QMainWindow):
         self.regen_delay_input = self.create_number_field("Regen Delay:", 0)
         form_layout.addLayout(self.regen_delay_input['layout'])
         
-        layout.addWidget(form)
-        layout.addStretch()
+        scroll_layout.addWidget(form)
+        scroll.setWidget(scroll_content)
+        layout.addWidget(scroll)
         
         return tab
     
@@ -481,58 +513,87 @@ class UnitMaker(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(15)
+        layout.setSpacing(20)
         
-        form = QFrame()
-        form.setStyleSheet("""
-            QFrame {
-                background-color: #2d2d3d;
-                border-radius: 8px;
-                padding: 20px;
+        # Use scroll area for better visibility
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea {
+                background-color: transparent;
+                border: none;
             }
         """)
-        form_layout = QVBoxLayout(form)
         
-        # Melee
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setSpacing(20)
+        
+        # Melee section
+        melee_frame = QFrame()
+        melee_frame.setStyleSheet("""
+            QFrame {
+                background-color: #2d2d3d;
+                border-radius: 12px;
+                padding: 25px;
+            }
+        """)
+        melee_layout = QVBoxLayout(melee_frame)
+        melee_layout.setSpacing(18)
+        
         melee_title = QLabel("🗡️ Melee Attack")
-        melee_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #5eff7b;")
-        form_layout.addWidget(melee_title)
+        melee_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #5eff7b;")
+        melee_layout.addWidget(melee_title)
         
         self.melee_hack_input = self.create_number_field("Hack Damage:", 0)
-        form_layout.addLayout(self.melee_hack_input['layout'])
+        melee_layout.addLayout(self.melee_hack_input['layout'])
         
         self.melee_pierce_input = self.create_number_field("Pierce Damage:", 0)
-        form_layout.addLayout(self.melee_pierce_input['layout'])
+        melee_layout.addLayout(self.melee_pierce_input['layout'])
         
         self.melee_crush_input = self.create_number_field("Crush Damage:", 0)
-        form_layout.addLayout(self.melee_crush_input['layout'])
+        melee_layout.addLayout(self.melee_crush_input['layout'])
         
         self.melee_range_input = self.create_number_field("Melee Range:", 3.0)
-        form_layout.addLayout(self.melee_range_input['layout'])
+        melee_layout.addLayout(self.melee_range_input['layout'])
         
-        # Ranged
-        form_layout.addSpacing(10)
+        scroll_layout.addWidget(melee_frame)
+        
+        # Ranged section
+        ranged_frame = QFrame()
+        ranged_frame.setStyleSheet("""
+            QFrame {
+                background-color: #2d2d3d;
+                border-radius: 12px;
+                padding: 25px;
+            }
+        """)
+        ranged_layout = QVBoxLayout(ranged_frame)
+        ranged_layout.setSpacing(18)
+        
         ranged_title = QLabel("🏹 Ranged Attack")
-        ranged_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #5eff7b;")
-        form_layout.addWidget(ranged_title)
+        ranged_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #5eff7b;")
+        ranged_layout.addWidget(ranged_title)
         
         self.ranged_hack_input = self.create_number_field("Hack Damage:", 0)
-        form_layout.addLayout(self.ranged_hack_input['layout'])
+        ranged_layout.addLayout(self.ranged_hack_input['layout'])
         
         self.ranged_pierce_input = self.create_number_field("Pierce Damage:", 0)
-        form_layout.addLayout(self.ranged_pierce_input['layout'])
+        ranged_layout.addLayout(self.ranged_pierce_input['layout'])
         
         self.ranged_crush_input = self.create_number_field("Crush Damage:", 0)
-        form_layout.addLayout(self.ranged_crush_input['layout'])
+        ranged_layout.addLayout(self.ranged_crush_input['layout'])
         
         self.ranged_range_input = self.create_number_field("Ranged Range:", 0)
-        form_layout.addLayout(self.ranged_range_input['layout'])
+        ranged_layout.addLayout(self.ranged_range_input['layout'])
         
         self.ranged_prepare_time_input = self.create_number_field("Prepare Time:", 1.0)
-        form_layout.addLayout(self.ranged_prepare_time_input['layout'])
+        ranged_layout.addLayout(self.ranged_prepare_time_input['layout'])
         
-        layout.addWidget(form)
-        layout.addStretch()
+        scroll_layout.addWidget(ranged_frame)
+        
+        scroll.setWidget(scroll_content)
+        layout.addWidget(scroll)
         
         return tab
     
@@ -541,17 +602,32 @@ class UnitMaker(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(15)
+        layout.setSpacing(20)
+        
+        # Use scroll area for better visibility
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea {
+                background-color: transparent;
+                border: none;
+            }
+        """)
+        
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setSpacing(20)
         
         form = QFrame()
         form.setStyleSheet("""
             QFrame {
                 background-color: #2d2d3d;
-                border-radius: 8px;
-                padding: 20px;
+                border-radius: 12px;
+                padding: 25px;
             }
         """)
         form_layout = QVBoxLayout(form)
+        form_layout.setSpacing(18)
         
         self.walk_speed_input = self.create_number_field("Walk Speed:", 1.0)
         form_layout.addLayout(self.walk_speed_input['layout'])
@@ -565,8 +641,9 @@ class UnitMaker(QMainWindow):
         self.passability_input = self.create_combo_field("Passability:", ["default", "ship", "large"], "default")
         form_layout.addLayout(self.passability_input['layout'])
         
-        layout.addWidget(form)
-        layout.addStretch()
+        scroll_layout.addWidget(form)
+        scroll.setWidget(scroll_content)
+        layout.addWidget(scroll)
         
         return tab
     
@@ -575,17 +652,32 @@ class UnitMaker(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(15)
+        layout.setSpacing(20)
+        
+        # Use scroll area for better visibility
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea {
+                background-color: transparent;
+                border: none;
+            }
+        """)
+        
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setSpacing(20)
         
         form = QFrame()
         form.setStyleSheet("""
             QFrame {
                 background-color: #2d2d3d;
-                border-radius: 8px;
-                padding: 20px;
+                border-radius: 12px;
+                padding: 25px;
             }
         """)
         form_layout = QVBoxLayout(form)
+        form_layout.setSpacing(18)
         
         self.vision_range_input = self.create_number_field("Vision Range:", 32)
         form_layout.addLayout(self.vision_range_input['layout'])
@@ -593,8 +685,9 @@ class UnitMaker(QMainWindow):
         self.retain_fog_checkbox = self.create_checkbox_field("Retain in Fog", False)
         form_layout.addLayout(self.retain_fog_checkbox['layout'])
         
-        layout.addWidget(form)
-        layout.addStretch()
+        scroll_layout.addWidget(form)
+        scroll.setWidget(scroll_content)
+        layout.addWidget(scroll)
         
         return tab
     
@@ -686,17 +779,32 @@ class UnitMaker(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(15)
+        layout.setSpacing(20)
+        
+        # Use scroll area for better visibility
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea {
+                background-color: transparent;
+                border: none;
+            }
+        """)
+        
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setSpacing(20)
         
         form = QFrame()
         form.setStyleSheet("""
             QFrame {
                 background-color: #2d2d3d;
-                border-radius: 8px;
-                padding: 20px;
+                border-radius: 12px;
+                padding: 25px;
             }
         """)
         form_layout = QVBoxLayout(form)
+        form_layout.setSpacing(18)
         
         self.actor_input = self.create_form_field("Actor:", "props/units/hellenes/infantry_spearman.xml")
         form_layout.addLayout(self.actor_input['layout'])
@@ -707,8 +815,9 @@ class UnitMaker(QMainWindow):
         self.selection_radius_input = self.create_number_field("Selection Radius:", 1.0)
         form_layout.addLayout(self.selection_radius_input['layout'])
         
-        layout.addWidget(form)
-        layout.addStretch()
+        scroll_layout.addWidget(form)
+        scroll.setWidget(scroll_content)
+        layout.addWidget(scroll)
         
         return tab
     
@@ -762,15 +871,17 @@ class UnitMaker(QMainWindow):
     def create_form_field(self, label: str, default: str) -> dict:
         """Create a text input field."""
         layout = QHBoxLayout()
+        layout.setSpacing(15)
         
         label_widget = QLabel(label)
-        label_widget.setStyleSheet("color: #7b5eff; font-size: 13px; font-weight: bold;")
-        label_widget.setFixedWidth(140)
+        label_widget.setStyleSheet("color: #7b5eff; font-size: 14px; font-weight: bold;")
+        label_widget.setFixedWidth(160)
         layout.addWidget(label_widget)
         
         input_widget = QLineEdit()
         input_widget.setText(default)
         input_widget.setStyleSheet(self.get_line_edit_style())
+        input_widget.setMinimumHeight(35)
         layout.addWidget(input_widget)
         
         layout.addStretch()
@@ -780,10 +891,11 @@ class UnitMaker(QMainWindow):
     def create_number_field(self, label: str, default: float) -> dict:
         """Create a number input field."""
         layout = QHBoxLayout()
+        layout.setSpacing(15)
         
         label_widget = QLabel(label)
-        label_widget.setStyleSheet("color: #7b5eff; font-size: 13px; font-weight: bold;")
-        label_widget.setFixedWidth(140)
+        label_widget.setStyleSheet("color: #7b5eff; font-size: 14px; font-weight: bold;")
+        label_widget.setFixedWidth(160)
         layout.addWidget(label_widget)
         
         input_widget = QDoubleSpinBox()
@@ -791,6 +903,7 @@ class UnitMaker(QMainWindow):
         input_widget.setValue(default)
         input_widget.setSingleStep(0.1)
         input_widget.setStyleSheet(self.get_spin_box_style())
+        input_widget.setMinimumHeight(35)
         layout.addWidget(input_widget)
         
         layout.addStretch()
@@ -800,16 +913,18 @@ class UnitMaker(QMainWindow):
     def create_combo_field(self, label: str, options: list, default: str) -> dict:
         """Create a combo box field."""
         layout = QHBoxLayout()
+        layout.setSpacing(15)
         
         label_widget = QLabel(label)
-        label_widget.setStyleSheet("color: #7b5eff; font-size: 13px; font-weight: bold;")
-        label_widget.setFixedWidth(140)
+        label_widget.setStyleSheet("color: #7b5eff; font-size: 14px; font-weight: bold;")
+        label_widget.setFixedWidth(160)
         layout.addWidget(label_widget)
         
         input_widget = QComboBox()
         input_widget.addItems(options)
         input_widget.setCurrentText(default)
         input_widget.setStyleSheet(self.get_spin_box_style())
+        input_widget.setMinimumHeight(35)
         layout.addWidget(input_widget)
         
         layout.addStretch()
@@ -819,15 +934,33 @@ class UnitMaker(QMainWindow):
     def create_checkbox_field(self, label: str, default: bool) -> dict:
         """Create a checkbox field."""
         layout = QHBoxLayout()
+        layout.setSpacing(15)
         
         label_widget = QLabel(label)
-        label_widget.setStyleSheet("color: #7b5eff; font-size: 13px; font-weight: bold;")
-        label_widget.setFixedWidth(140)
+        label_widget.setStyleSheet("color: #7b5eff; font-size: 14px; font-weight: bold;")
+        label_widget.setFixedWidth(160)
         layout.addWidget(label_widget)
         
         input_widget = QCheckBox("Enabled")
         input_widget.setChecked(default)
-        input_widget.setStyleSheet("color: #c0c0d0; font-size: 13px;")
+        input_widget.setStyleSheet("""
+            QCheckBox {
+                color: #c0c0d0;
+                font-size: 14px;
+                spacing: 8px;
+            }
+            QCheckBox::indicator {
+                width: 20px;
+                height: 20px;
+                border: 2px solid #4a4a6a;
+                border-radius: 4px;
+                background-color: #1a1a2a;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #7b5eff;
+                border-color: #7b5eff;
+            }
+        """)
         layout.addWidget(input_widget)
         
         layout.addStretch()
@@ -914,9 +1047,10 @@ class UnitMaker(QMainWindow):
                 background-color: #1a1a2a;
                 color: #ffffff;
                 border: 2px solid #4a4a6a;
-                border-radius: 6px;
-                padding: 8px 12px;
-                font-size: 13px;
+                border-radius: 8px;
+                padding: 10px 15px;
+                font-size: 14px;
+                min-height: 20px;
             }
             QLineEdit:focus {
                 border-color: #7b5eff;
@@ -930,9 +1064,10 @@ class UnitMaker(QMainWindow):
                 background-color: #1a1a2a;
                 color: #ffffff;
                 border: 2px solid #4a4a6a;
-                border-radius: 6px;
-                padding: 6px;
-                font-size: 13px;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 14px;
+                min-height: 20px;
             }
             QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
                 border-color: #7b5eff;
